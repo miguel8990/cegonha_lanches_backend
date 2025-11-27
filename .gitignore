@@ -1,0 +1,32 @@
+# --- Python (Bytecode compilado) ---
+__pycache__/
+*.py[cod]
+*$py.class
+
+# --- Ambiente Virtual (NUNCA suba isso) ---
+.venv/
+venv/
+env/
+
+# --- Variáveis de Ambiente e Segredos (SEGURANÇA MÁXIMA) ---
+.env
+.flaskenv
+
+# --- Banco de Dados Local (SQLite) ---
+*.db
+*.sqlite3
+/instance/*
+!/instance/.gitignore
+
+# --- IDEs e Editores (Configurações da sua máquina) ---
+.idea/
+.vscode/
+*.swp
+
+# --- Logs e Arquivos de Erro ---
+*.log
+
+# --- Outros ---
+.DS_Store
+Thumbs.db
+

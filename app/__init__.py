@@ -1,0 +1,39 @@
+from flask import Flask
+from flask_cors import CORS
+from .errors import configure_errors
+from config import Config
+from .extensions import db, jwt, migrate, ma
+
+
+# Instancia plugins globalmente (ainda sem o app)
+
+
+
+def create_app():
+    app = Flask(__name__)
+    # ... configurações iniciais ...
+    app.config.from_object(Config)
+    db.init_app(app)
+    migrate.init_app(app, db)
+    jwt.init_app(app)
+    ma.init_app(app)
+    # Importação das Rotas (Blueprints)
+    # ANTES: from .routes_menu import bp_menu
+
+    from . import models
+
+    CORS(app)
+    # AGORA: Importamos da pasta routes e do arquivo menu
+    from .routes.routes_menu import bp_menu
+    from .routes.routes_orders import bp_orders
+    from .routes.routes_auth import bp_auth
+    from .routes.routes_payment import bp_payment
+
+    # Registro das Rotas (Isso continua igual, ou você pode ajustar o prefixo se quiser)
+    app.register_blueprint(bp_menu, url_prefix='/api/menu')
+    app.register_blueprint(bp_orders, url_prefix='/api/orders')
+    app.register_blueprint(bp_auth, url_prefix='/api/auth')
+    app.register_blueprint(bp_payment, url_prefix='/api/payment')
+    configure_errors(app)
+
+    return app
