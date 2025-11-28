@@ -9,17 +9,24 @@ class User(db.Model):
     name = db.Column(db.String(100), nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
     password_hash = db.Column(db.String(256), nullable=False)
-    is_admin = db.Column(db.Boolean, default=False)
+    role = db.Column(db.String(20), default='client')
+
+    @property
+    def is_admin(self):
+        return self.role in ['admin', 'super_admin']
+
+
     # [TICKET #009] Novos campos de perfil (Preparando para o futuro)
     whatsapp = db.Column(db.String(20))
     street = db.Column(db.String(200))
+
     number = db.Column(db.String(20))
     neighborhood = db.Column(db.String(100))
     complement = db.Column(db.String(100))
     orders = db.relationship('Order', backref='customer', lazy=True)
 
     def to_dict(self):
-        return {"id": self.id, "name": self.name, "email": self.email, "is_admin": self.is_admin}
+        return {"id": self.id, "name": self.name, "email": self.email, "role": self.role}
 
 
 # ... (Product continua igual) ...
@@ -58,7 +65,10 @@ class Order(db.Model):
     complement = db.Column(db.String(100))  # Apto/Casa (Novo)
 
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+    items = db.relationship('OrderItem', backref='order', lazy=True)
 
+    payment_method = db.Column(db.String(50))  # ex: 'credit_card', 'pix', 'cash_on_delivery'
+    payment_status = db.Column(db.String(20), default='pending')  # pending, approved, rejected
 
 class OrderItem(db.Model):
     id = db.Column(db.Integer, primary_key=True)

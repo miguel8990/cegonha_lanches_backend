@@ -1,8 +1,8 @@
-"""Migracao inicial
+"""Recriando banco com roles
 
-Revision ID: 371ce3e17d20
+Revision ID: 17555a003d8e
 Revises: 
-Create Date: 2025-11-26 16:18:03.172563
+Create Date: 2025-11-28 11:50:42.663273
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = '371ce3e17d20'
+revision = '17555a003d8e'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -34,7 +34,12 @@ def upgrade():
     sa.Column('name', sa.String(length=100), nullable=False),
     sa.Column('email', sa.String(length=120), nullable=False),
     sa.Column('password_hash', sa.String(length=256), nullable=False),
-    sa.Column('is_admin', sa.Boolean(), nullable=True),
+    sa.Column('role', sa.String(length=20), nullable=True),
+    sa.Column('whatsapp', sa.String(length=20), nullable=True),
+    sa.Column('street', sa.String(length=200), nullable=True),
+    sa.Column('number', sa.String(length=20), nullable=True),
+    sa.Column('neighborhood', sa.String(length=100), nullable=True),
+    sa.Column('complement', sa.String(length=100), nullable=True),
     sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('email')
     )
@@ -43,9 +48,15 @@ def upgrade():
     sa.Column('date_created', sa.DateTime(), nullable=True),
     sa.Column('status', sa.String(length=20), nullable=True),
     sa.Column('total_price', sa.Float(), nullable=True),
-    sa.Column('address', sa.String(length=200), nullable=True),
+    sa.Column('customer_name', sa.String(length=100), nullable=True),
+    sa.Column('customer_phone', sa.String(length=20), nullable=True),
+    sa.Column('street', sa.String(length=200), nullable=True),
     sa.Column('number', sa.String(length=20), nullable=True),
+    sa.Column('neighborhood', sa.String(length=100), nullable=True),
+    sa.Column('complement', sa.String(length=100), nullable=True),
     sa.Column('user_id', sa.Integer(), nullable=True),
+    sa.Column('payment_method', sa.String(length=50), nullable=True),
+    sa.Column('payment_status', sa.String(length=20), nullable=True),
     sa.ForeignKeyConstraint(['user_id'], ['user.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
@@ -55,7 +66,7 @@ def upgrade():
     sa.Column('product_id', sa.Integer(), nullable=False),
     sa.Column('quantity', sa.Integer(), nullable=False),
     sa.Column('price_at_time', sa.Float(), nullable=False),
-    sa.Column('observations', sa.String(length=250), nullable=True),
+    sa.Column('customizations_json', sa.Text(), nullable=True),
     sa.ForeignKeyConstraint(['order_id'], ['order.id'], ),
     sa.ForeignKeyConstraint(['product_id'], ['product.id'], ),
     sa.PrimaryKeyConstraint('id')

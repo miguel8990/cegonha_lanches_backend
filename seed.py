@@ -1,15 +1,50 @@
 from app import create_app
 from app.extensions import db
-from app.models import Product
+from app.models import Product, User
+from werkzeug.security import generate_password_hash
 import json
+import os
 
 app = create_app()
 
+
+def create_super_admin():
+    """
+    Função dedicada a criar o usuário 'Deus' (Nível 2).
+    """
+    SUPER_EMAIL = os.getenv("SUPER_ADMIN_EMAIL")
+    SUPER_PASS = os.getenv("SUPER_ADMIN_PASSWORD")
+
+    if User.query.filter_by(email=SUPER_EMAIL).first():
+        print(f"⚠️  Super Admin '{SUPER_EMAIL}' já existe. Pulei.")
+        return
+
+    print(f"👤 Criando Super Admin: {SUPER_EMAIL}...")
+
+    from werkzeug.security import generate_password_hash
+    super_admin = User(
+        name="Super Admin Deus",
+        email=SUPER_EMAIL,
+        password_hash=generate_password_hash(SUPER_PASS),
+        role="super_admin",  # <--- O sistema calcula is_admin=True automaticamente por causa disso
+        # REMOVIDO: is_admin=True (Isso causava o erro)
+        whatsapp="0000000000",
+        street="Nuvem",
+        number="1",
+        neighborhood="Céu",
+        complement="Sala do Servidor"
+    )
+
+    db.session.add(super_admin)
+    db.session.commit()
+    print("✅ Super Admin criado com sucesso!")
 
 def seed_database():
     with app.app_context():
         # Limpa produtos antigos para não duplicar
         db.session.query(Product).delete()
+        db.create_all()
+        create_super_admin()
 
         # --- DADOS PADRÃO (REPETEM EM QUASE TODOS) ---
         adicionais_padrao = [

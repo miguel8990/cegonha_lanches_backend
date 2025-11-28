@@ -29,4 +29,5 @@ env/
 # --- Outros ---
 .DS_Store
 Thumbs.db
+.seed
 
