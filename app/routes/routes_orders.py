@@ -12,7 +12,7 @@ bp_orders = Blueprint('orders', __name__)
 # ==============================================================================
 
 @bp_orders.route('/create', methods=['POST'])
-@jwt_required()
+@jwt_required(optional=True)
 def create_order():
     """
     Cliente cria um novo pedido.

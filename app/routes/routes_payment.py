@@ -32,6 +32,7 @@ def process_payment():
 # ==============================================================================
 
 @bp_payment.route('/webhook/mercadopago', methods=['POST'])
+@admin_required()
 def webhook_mercadopago():
     data = request.get_json()
     # Chama o serviço sem bloquear a thread

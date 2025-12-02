@@ -18,15 +18,12 @@ def register_user(name, email, password, whatsapp=None, street=None, number=None
         email=email,
         password_hash=hashed_password,
         role='client',  # Força nível baixo
-        whatsapp=whatsapp,
-        street=street,
-        number=number,
-        neighborhood=neighborhood,
-        complement=complement
+        whatsapp=whatsapp
     )
 
     db.session.add(new_user)
     db.session.commit()
+
     return new_user
 
 
@@ -69,3 +66,45 @@ def login_user(email, password):
             }
         }
     return None
+
+
+# app/services/auth_service.py
+
+# ... (funções existentes: register_user, login_user, etc) ...
+
+def update_user_info(user_id, data):
+    user = User.query.get(user_id)
+    if not user:
+        raise ValueError("Usuário não encontrado.")
+
+    if 'name' in data: user.name = data['name'].strip()
+    if 'whatsapp' in data: user.whatsapp = data['whatsapp']
+
+    # [NOVO] Lógica de Senha (Descomentada e com import necessário)
+    if 'password' in data and data['password']:
+        # Precisamos importar o gerador de hash aqui dentro ou no topo
+        from werkzeug.security import generate_password_hash
+        user.password_hash = generate_password_hash(data['password'])
+
+    db.session.commit()
+
+    # Busca o endereço ativo para retornar junto no JSON (conveniência pro front)
+    active_address = None
+    for addr in user.addresses:
+        if addr.is_active:
+            active_address = {
+                "street": addr.street,
+                "number": addr.number,
+                "neighborhood": addr.neighborhood,
+                "complement": addr.complement
+            }
+            break
+
+    return {
+        'id': user.id,
+        'name': user.name,
+        'email': user.email,
+        'role': user.role,
+        'whatsapp': user.whatsapp,
+        'address': active_address or {} # Retorna vazio se não tiver ativo
+    }

@@ -3,6 +3,9 @@ from flask_cors import CORS
 from .errors import configure_errors
 from config import Config
 from .extensions import db, jwt, migrate, ma
+from .routes.routes_address import bp_address
+from .routes.routes_chat import bp_chat
+
 
 
 # Instancia plugins globalmente (ainda sem o app)
@@ -34,6 +37,8 @@ def create_app():
     app.register_blueprint(bp_orders, url_prefix='/api/orders')
     app.register_blueprint(bp_auth, url_prefix='/api/auth')
     app.register_blueprint(bp_payment, url_prefix='/api/payment')
+    app.register_blueprint(bp_address, url_prefix='/api/address')
+    app.register_blueprint(bp_chat, url_prefix='/api/chat')
     configure_errors(app)
 
     return app

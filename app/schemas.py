@@ -1,10 +1,16 @@
 from marshmallow import fields
 from .extensions import ma, db
-from .models import User, Product, Order, OrderItem
+from .models import User, Product, Order, OrderItem, Address, ChatMessage
 
+class AddressSchema(ma.SQLAlchemyAutoSchema):
 
+    class Meta:
+        model = Address
+        load_instance = True
+        include_fk = True
 # 1. Schema do Usuário
 class UserSchema(ma.SQLAlchemyAutoSchema):
+    addresses = ma.List(ma.Nested(AddressSchema), dump_only=True)
     class Meta:
         model = User
         load_instance = True
@@ -48,6 +54,12 @@ class OrderSchema(ma.SQLAlchemyAutoSchema):
         include_fk = True
         sqla_session = db.session
 
+class ChatMessageSchema(ma.SQLAlchemyAutoSchema):
+    class Meta:
+        model = ChatMessage
+        load_instance = True
+        include_fk = True
+
 
 # --- INSTÂNCIAS (SINGLE E LISTAS) ---
 
@@ -66,3 +78,10 @@ orders_schema = OrderSchema(many=True)
 # Itens de Pedido (caso precise manipular isoladamente)
 order_item_schema = OrderItemSchema()
 order_items_schema = OrderItemSchema(many=True)
+
+address_schema = AddressSchema()
+addresses_schema = AddressSchema(many=True)
+
+
+chat_message_schema = ChatMessageSchema()
+chat_messages_schema = ChatMessageSchema(many=True)

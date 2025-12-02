@@ -9,6 +9,7 @@ def create_order_logic(data, user_id=None):
     # 1. Validação e Cabeçalho
     customer_data = data.get('customer', {})
     address_data = customer_data.get('address', {})
+    payment_method_chosen = data.get('payment_method', 'Não informado')
 
     if not address_data.get('street') or not address_data.get('number'):
         raise ValueError("Endereço e número são obrigatórios.")
@@ -17,12 +18,16 @@ def create_order_logic(data, user_id=None):
         user_id=user_id,
         status='Recebido',
         total_price=0.0,
+        payment_method=payment_method_chosen,
+        payment_status='pending',  # Padrão inicial
         customer_name=customer_data.get('name'),
         customer_phone=customer_data.get('phone'),
         street=address_data.get('street'),
         number=address_data.get('number'),
         neighborhood=address_data.get('neighborhood'),
         complement=address_data.get('complement')
+
+
     )
 
     db.session.add(new_order)
@@ -78,29 +83,29 @@ def get_order_logic(user_id):
 # --- FUNÇÕES AUXILIARES (PRIVADAS) ---
 
 def _calculate_item_price(product, customizations):
-    """
-    Calcula o preço unitário final de um produto somando seus adicionais.
-    """
     base_price = product.price
     product_details = product.get_details()
 
     # Soma Adicionais
     chosen_adicionais = customizations.get('adicionais', [])
     available_adicionais = product_details.get('adicionais', [])
-
     for chosen in chosen_adicionais:
         match = next((ad for ad in available_adicionais if ad['nome'] == chosen), None)
-        if match:
-            base_price += match['price']
+        if match: base_price += match['price']
 
     # Soma Acompanhamentos
     chosen_acompanhamentos = customizations.get('acompanhamentos', [])
     available_acompanhamentos = product_details.get('acompanhamentos', [])
-
     for chosen in chosen_acompanhamentos:
         match = next((ac for ac in available_acompanhamentos if ac['nome'] == chosen), None)
-        if match:
-            base_price += match['price']
+        if match: base_price += match['price']
+
+    # [NOVO] Soma Bebidas
+    chosen_bebidas = customizations.get('bebidas', [])
+    available_bebidas = product_details.get('bebidas', [])
+    for chosen in chosen_bebidas:
+        match = next((beb for beb in available_bebidas if beb['nome'] == chosen), None)
+        if match: base_price += match['price']
 
     return base_price
 

@@ -28,16 +28,125 @@ def create_super_admin():
         password_hash=generate_password_hash(SUPER_PASS),
         role="super_admin",  # <--- O sistema calcula is_admin=True automaticamente por causa disso
         # REMOVIDO: is_admin=True (Isso causava o erro)
-        whatsapp="0000000000",
-        street="Nuvem",
-        number="1",
-        neighborhood="Céu",
-        complement="Sala do Servidor"
+        whatsapp="0000000000"
     )
 
     db.session.add(super_admin)
     db.session.commit()
     print("✅ Super Admin criado com sucesso!")
+
+
+def seed_products():
+    """
+    Função dedicada a popular o cardápio com Lanches, Combos e agora BEBIDAS.
+    """
+    print("📦 Resetando tabela de produtos...")
+    try:
+        db.session.query(Product).delete()
+    except Exception:
+        db.session.rollback()
+
+    # --- LISTAS PADRÃO (BASEADAS NO SEU API.JS) ---
+    adicionais_padrao = [
+        {"nome": "Hambúrguer", "price": 2.5},
+        {"nome": "Hambúrguer Artesanal", "price": 5.0},
+        {"nome": "Mussarela", "price": 3.0},
+        {"nome": "Bacon", "price": 3.0},
+        {"nome": "Salsicha", "price": 2.0},
+        {"nome": "Ovo", "price": 2.0},
+        {"nome": "Requeijão ou cheddar", "price": 2.0},
+        {"nome": "Batata Palha", "price": 3.0},
+    ]
+
+    acompanhamentos_padrao = [
+        {"nome": "Porção de batata porção inteira", "price": 30.0},
+        {"nome": "Porção de batata porção 1/2", "price": 20.0},
+        {"nome": "Bacon e cheddar porção inteira", "price": 40.0},
+        {"nome": "Bacon e cheddar porção 1/2", "price": 30.0},
+        {"nome": "Calabresa porção inteira", "price": 40.0},
+        {"nome": "Calabresa porção 1/2", "price": 25.0},
+    ]
+
+    # [NOVO] Lista de Bebidas extraída do seu api.js
+    bebidas_padrao = [
+        {"nome": "Cotuba 2L", "price": 10.0},
+        {"nome": "Cotuba 600ml", "price": 6.0},
+        {"nome": "Cotuba Lata 350ml", "price": 5.0},
+        {"nome": "Coca-Cola 2L", "price": 12.0},
+        {"nome": "Coca-Cola 600ml", "price": 6.0},
+        {"nome": "Coca-Cola Lata 350ml", "price": 5.0},
+        {"nome": "Skol Lata 350ml", "price": 5.0},
+        {"nome": "Antartica Lata 350ml", "price": 5.0},
+    ]
+
+    # --- LISTA DE PRODUTOS ---
+    products_data = [
+        # LANCHES
+        {
+            "name": "FALCÃO", "price": 30.0, "category": "Lanche",
+            "description": "Pão, presunto, mussarela, ovo, requeijão, bacon, milho, alface, tomate. (Opções de Carnes: Frango, Lombo ou Filé)",
+            "image_url": "assets/falcao.jpg",
+            "details": {
+                "carnes": [{"nome": "Frango", "price": 0}, {"nome": "Lombo", "price": 0}, {"nome": "Filé", "price": 0}],
+                "acompanhamentos": acompanhamentos_padrao,
+                "adicionais": adicionais_padrao,
+                "bebidas": bebidas_padrao  # <--- ADICIONADO
+            }
+        },
+        {
+            "name": "ÁGUIA", "price": 35.0, "category": "Lanche",
+            "description": "Pão, Hambúrguer da casa, duas fatias de presunto, Mussarela, ovo, Bacon, Cenoura, Milho, Alface, Tomate.",
+            "image_url": "assets/aguia.jpg",
+            "details": {
+                "carnes": [{"nome": "Hambúrguer", "price": 0}],
+                "acompanhamentos": acompanhamentos_padrao,
+                "adicionais": adicionais_padrao,
+                "bebidas": bebidas_padrao  # <--- ADICIONADO
+            }
+        },
+        {
+            "name": "CALOPSITA", "price": 30.0, "category": "Lanche",
+            "description": "Pão, hambúrguer, presunto, mussarela, ovo, salsicha, bacon, creme de leite, milho, alface, tomate.",
+            "image_url": "assets/calopsita.jpg",
+            "details": {
+                "carnes": [{"nome": "Hambúrguer", "price": 0}],
+                "acompanhamentos": acompanhamentos_padrao,
+                "adicionais": adicionais_padrao,
+                "bebidas": bebidas_padrao
+            }
+        },
+        # ... (Adicione os outros lanches: CANÁRIO, CEGONHA-TURBO, etc. seguindo este padrão) ...
+        # Se quiser adicionar todos, basta copiar o bloco acima e mudar nome/descrição/imagem.
+
+        # COMBOS
+        {
+            "name": "COMBO CALOPSITA + BATATA FRITA", "price": 45.0, "category": "Combo",
+            "description": "Pão, Hambúrguer, Presunto, Ovo, Salsicha, Bacon, Creme de Leite, Alface, Tomate, Milho + 250G de Batata Frita",
+            "image_url": "assets/combo-calopsita.jpg",
+            "details": {
+                "carnes": [],
+                "acompanhamentos": acompanhamentos_padrao,
+                "adicionais": adicionais_padrao,
+                "bebidas": bebidas_padrao
+            }
+        }
+    ]
+
+    print("🍔 Criando produtos...")
+    for p_data in products_data:
+        new_prod = Product(
+            name=p_data['name'],
+            description=p_data['description'],
+            price=p_data['price'],
+            image_url=p_data['image_url'],
+            category=p_data['category'],
+            is_available=True,
+            details_json=json.dumps(p_data['details'])
+        )
+        db.session.add(new_prod)
+
+    db.session.commit()
+    print("✅ Menu populado com sucesso!")
 
 def seed_database():
     with app.app_context():
@@ -45,6 +154,7 @@ def seed_database():
         db.session.query(Product).delete()
         db.create_all()
         create_super_admin()
+        seed_products()
 
         # --- DADOS PADRÃO (REPETEM EM QUASE TODOS) ---
         adicionais_padrao = [

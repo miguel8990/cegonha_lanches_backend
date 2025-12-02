@@ -39,6 +39,22 @@ def login():
     return jsonify({'message': 'Credenciais inválidas'}), 401
 
 
+# app/routes/routes_auth.py
+
+# ... (outras rotas) ...
+
+@bp_auth.route('/update', methods=['PUT'])
+@jwt_required()
+def update_profile():
+    user_id = get_jwt_identity()
+    data = request.get_json()
+
+    try:
+        updated_user = auth_service.update_user_info(user_id, data)
+        return jsonify({'message': 'Perfil atualizado!', 'user': updated_user}), 200
+    except ValueError as e:
+        return jsonify({'error': str(e)}), 400
+
 # --- ROTA SECRETA (NÍVEL DEUS) ---
 
 @bp_auth.route('/admin/create', methods=['POST'])
