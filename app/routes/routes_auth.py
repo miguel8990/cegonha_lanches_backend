@@ -2,6 +2,7 @@ from flask import Blueprint, jsonify, request
 from app.services import auth_service
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from app.decorators import super_admin_required  # Importe o novo decorator
+from app.extensions import limiter
 
 bp_auth = Blueprint('auth', __name__)
 
@@ -9,6 +10,7 @@ bp_auth = Blueprint('auth', __name__)
 # --- ROTAS PÚBLICAS ---
 
 @bp_auth.route('/register', methods=['POST'])
+@limiter.limit("5 per day")
 def register():
     data = request.get_json()
     try:

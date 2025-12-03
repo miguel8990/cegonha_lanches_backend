@@ -2,6 +2,7 @@ from ..models import Product, db
 from ..schemas import products_schema, product_schema
 import json
 from marshmallow import ValidationError
+import os
 
 
 def get_all_products(only_available=True):
@@ -84,11 +85,17 @@ def toggle_availability(product_id):
     return {"id": product.id, "is_available": product.is_available}
 
 
-def delete_product(product_id):
+def delete_product(product_id, password_attempt):
     """
-    Hard Delete. Cuidado: Se tiver pedidos com esse produto, pode dar erro de FK.
-    Idealmente, num sistema grande, usaríamos Soft Delete (apenas desativar).
+    Hard Delete com verificação de Senha Mestra.
     """
+    # 1. Busca a senha real no .env
+    master_pass = os.getenv('DELETE_PASSWORD')
+
+    # 2. Verifica se a senha enviada bate com a do sistema
+    if not password_attempt or password_attempt != master_pass:
+        raise ValueError("Senha Mestra incorreta! Ação bloqueada.")
+
     product = Product.query.get(product_id)
     if not product:
         raise ValueError("Produto não encontrado.")

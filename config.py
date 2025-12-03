@@ -17,3 +17,6 @@ class Config:
     # Isso define que o token de login expira em 1 dia, por exemplo
     JWT_SECRET_KEY = os.environ.get('JWT_SECRET_KEY') or 'chave-secreta-jwt'
     JWT_ACCESS_TOKEN_EXPIRES = timedelta(days=1)
+    BASE_DIR = os.path.abspath(os.path.dirname(__file__))
+    UPLOAD_FOLDER = os.path.join(BASE_DIR, 'app', 'static', 'uploads')
+    MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # Limite de 16MB por foto

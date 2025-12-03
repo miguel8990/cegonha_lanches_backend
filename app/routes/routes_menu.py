@@ -76,8 +76,13 @@ def toggle_product(product_id):
 @bp_menu.route('/<int:product_id>', methods=['DELETE'])
 @admin_required()
 def remove_product(product_id):
+    # Pega o corpo da requisição (onde virá a senha)
+    data = request.get_json() or {}
+    password = data.get('password')
+
     try:
-        product_service.delete_product(product_id)
+        # Passa a senha para o serviço validar
+        product_service.delete_product(product_id, password)
         return jsonify({'message': 'Produto removido com sucesso.'}), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 400
