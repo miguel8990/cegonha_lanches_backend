@@ -2,7 +2,8 @@ import re
 from ..models import User, db
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_jwt_extended import create_access_token
-
+from datetime import timedelta
+from .email_services import send_reset_email
 
 # --- FUNÇÃO AUXILIAR DE VALIDAÇÃO ---
 def validate_password_strength(password):
@@ -148,3 +149,52 @@ def update_user_info(user_id, data):
         'whatsapp': user.whatsapp,
         'address': active_address or {}
     }
+
+
+# app/services/auth_service.py
+from datetime import timedelta
+# ... importações existentes ...
+from .email_services import send_reset_email  # Importe o novo serviço
+
+
+def request_password_reset(email):
+    """
+    1. Verifica se e-mail existe.
+    2. Gera token temporário.
+    3. Envia e-mail.
+    """
+    user = User.query.filter_by(email=email).first()
+    if not user:
+        # Por segurança, não dizemos se o e-mail existe ou não,
+        # apenas retornamos sucesso falso ou True genérico.
+        # Mas para simplificar aqui, vamos retornar False.
+        return False
+
+    # Gera um token JWT específico para reset, expirando em 30min
+    reset_token = create_access_token(
+        identity=str(user.id),
+        expires_delta=timedelta(minutes=30),
+        additional_claims={"type": "password_reset"}  # Marca d'água para saber que é reset
+    )
+
+    # Chama o serviço de e-mail
+    send_reset_email(user.email, reset_token)
+    return True
+
+
+def reset_password_with_token(user_id, new_password):
+    """
+    Efetiva a troca. O user_id já vem extraído e validado do token na rota.
+    """
+    user = User.query.get(user_id)
+    if not user:
+        raise ValueError("Usuário inválido.")
+
+    # Reutiliza sua validação de força de senha
+    is_valid, error = validate_password_strength(new_password)
+    if not is_valid:
+        raise ValueError(error)
+
+    user.password_hash = generate_password_hash(new_password)
+    db.session.commit()
+    return True

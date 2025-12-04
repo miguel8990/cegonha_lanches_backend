@@ -10,44 +10,45 @@ app = create_app()
 
 def create_super_admin():
     """
-    Função dedicada a criar o usuário 'Deus' (Nível 2).
+    Cria o Super Admin se não existir.
     """
-    SUPER_EMAIL = os.getenv("SUPER_ADMIN_EMAIL")
-    SUPER_PASS = os.getenv("SUPER_ADMIN_PASSWORD")
+    SUPER_EMAIL = os.getenv("SUPER_ADMIN_EMAIL", "admin@cegonha.com")
+    SUPER_PASS = os.getenv("SUPER_ADMIN_PASSWORD", "senha_super_secreta")
 
     if User.query.filter_by(email=SUPER_EMAIL).first():
-        print(f"⚠️  Super Admin '{SUPER_EMAIL}' já existe. Pulei.")
+        print(f"⚠️  Super Admin '{SUPER_EMAIL}' já existe.")
         return
 
     print(f"👤 Criando Super Admin: {SUPER_EMAIL}...")
 
-    from werkzeug.security import generate_password_hash
     super_admin = User(
         name="Super Admin Deus",
         email=SUPER_EMAIL,
         password_hash=generate_password_hash(SUPER_PASS),
-        role="super_admin",  # <--- O sistema calcula is_admin=True automaticamente por causa disso
-        # REMOVIDO: is_admin=True (Isso causava o erro)
+        role="super_admin",
         whatsapp="0000000000"
     )
 
     db.session.add(super_admin)
     db.session.commit()
-    print("✅ Super Admin criado com sucesso!")
+    print("✅ Super Admin criado!")
 
 
-def seed_products():
+def get_common_options():
     """
-    Função dedicada a popular o cardápio com Lanches, Combos e agora BEBIDAS.
+    Retorna as listas padrão usadas em quase todos os lanches.
+    Baseado no api.js.
     """
-    print("📦 Resetando tabela de produtos...")
-    try:
-        db.session.query(Product).delete()
-    except Exception:
-        db.session.rollback()
+    acompanhamentos = [
+        {"nome": "Porção de batata porção inteira", "price": 30.0},
+        {"nome": "Porção de batata porção 1/2", "price": 20.0},
+        {"nome": "Bacon e cheddar porção inteira", "price": 40.0},
+        {"nome": "Bacon e cheddar porção 1/2", "price": 30.0},
+        {"nome": "Calabresa porção inteira", "price": 40.0},
+        {"nome": "Calabresa porção 1/2", "price": 25.0},
+    ]
 
-    # --- LISTAS PADRÃO (BASEADAS NO SEU API.JS) ---
-    adicionais_padrao = [
+    adicionais = [
         {"nome": "Hambúrguer", "price": 2.5},
         {"nome": "Hambúrguer Artesanal", "price": 5.0},
         {"nome": "Mussarela", "price": 3.0},
@@ -58,17 +59,7 @@ def seed_products():
         {"nome": "Batata Palha", "price": 3.0},
     ]
 
-    acompanhamentos_padrao = [
-        {"nome": "Porção de batata porção inteira", "price": 30.0},
-        {"nome": "Porção de batata porção 1/2", "price": 20.0},
-        {"nome": "Bacon e cheddar porção inteira", "price": 40.0},
-        {"nome": "Bacon e cheddar porção 1/2", "price": 30.0},
-        {"nome": "Calabresa porção inteira", "price": 40.0},
-        {"nome": "Calabresa porção 1/2", "price": 25.0},
-    ]
-
-    # [NOVO] Lista de Bebidas extraída do seu api.js
-    bebidas_padrao = [
+    bebidas = [
         {"nome": "Cotuba 2L", "price": 10.0},
         {"nome": "Cotuba 600ml", "price": 6.0},
         {"nome": "Cotuba Lata 350ml", "price": 5.0},
@@ -79,160 +70,164 @@ def seed_products():
         {"nome": "Antartica Lata 350ml", "price": 5.0},
     ]
 
-    # --- LISTA DE PRODUTOS ---
-    products_data = [
-        # LANCHES
+    return acompanhamentos, adicionais, bebidas
+
+
+def seed_products():
+    """
+    Popula o banco com todos os produtos do api.js.
+    """
+    print("📦 Resetando tabela de produtos...")
+    try:
+        db.session.query(Product).delete()
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        print(f"Erro ao limpar produtos: {e}")
+
+    # Carrega as listas comuns
+    acompanhamentos, adicionais, bebidas = get_common_options()
+
+    # Lista completa baseada no api.js
+    all_products = [
         {
-            "name": "FALCÃO", "price": 30.0, "category": "Lanche",
+            "name": "FALCÃO",
+            "price": 30.0,
+            "category": "Lanche",
             "description": "Pão, presunto, mussarela, ovo, requeijão, bacon, milho, alface, tomate. (Opções de Carnes: Frango, Lombo ou Filé)",
             "image_url": "assets/falcao.jpg",
-            "details": {
-                "carnes": [{"nome": "Frango", "price": 0}, {"nome": "Lombo", "price": 0}, {"nome": "Filé", "price": 0}],
-                "acompanhamentos": acompanhamentos_padrao,
-                "adicionais": adicionais_padrao,
-                "bebidas": bebidas_padrao  # <--- ADICIONADO
-            }
+            "carnes": [{"nome": "Frango", "price": 0}, {"nome": "Lombo", "price": 0}, {"nome": "Filé", "price": 0}]
         },
         {
-            "name": "ÁGUIA", "price": 35.0, "category": "Lanche",
+            "name": "ÁGUIA",
+            "price": 35.0,
+            "category": "Lanche",
             "description": "Pão, Hambúrguer da casa, duas fatias de presunto, Mussarela, ovo, Bacon, Cenoura, Milho, Alface, Tomate.",
             "image_url": "assets/aguia.jpg",
-            "details": {
-                "carnes": [{"nome": "Hambúrguer", "price": 0}],
-                "acompanhamentos": acompanhamentos_padrao,
-                "adicionais": adicionais_padrao,
-                "bebidas": bebidas_padrao  # <--- ADICIONADO
-            }
+            "carnes": [{"nome": "Hambúrguer", "price": 0}]
         },
         {
-            "name": "CALOPSITA", "price": 30.0, "category": "Lanche",
+            "name": "CALOPSITA",
+            "price": 30.0,
+            "category": "Lanche",
             "description": "Pão, hambúrguer, presunto, mussarela, ovo, salsicha, bacon, creme de leite, milho, alface, tomate.",
             "image_url": "assets/calopsita.jpg",
-            "details": {
-                "carnes": [{"nome": "Hambúrguer", "price": 0}],
-                "acompanhamentos": acompanhamentos_padrao,
-                "adicionais": adicionais_padrao,
-                "bebidas": bebidas_padrao
-            }
+            "carnes": [{"nome": "Hambúrguer", "price": 0}]
         },
-        # ... (Adicione os outros lanches: CANÁRIO, CEGONHA-TURBO, etc. seguindo este padrão) ...
-        # Se quiser adicionar todos, basta copiar o bloco acima e mudar nome/descrição/imagem.
-
-        # COMBOS
         {
-            "name": "COMBO CALOPSITA + BATATA FRITA", "price": 45.0, "category": "Combo",
+            "name": "CANÁRIO",
+            "price": 30.0,
+            "category": "Lanche",
+            "description": "Pão, hambúrguer, presunto, mussarela, 2 ovos, bacon, requeijão, milho, alface, tomate.",
+            "image_url": "assets/canario.jpg",
+            "carnes": [{"nome": "Hambúrguer", "price": 0}]
+        },
+        {
+            "name": "CEGONHA-TURBO",
+            "price": 45.0,
+            "category": "Lanche",
+            "description": "Pão, hambúrguer, presunto, mussarela, ovo, requeijão, bacon, lombo, frango, filé, salsicha, milho, tomate, alface.",
+            "image_url": "assets/cegonha-turbo.jpg",
+            "carnes": [{"nome": "Hambúrguer", "price": 0}]
+        },
+        {
+            "name": "BEM-TE-VI",
+            "price": 25.0,
+            "category": "Lanche",
+            "description": "Pão, hambúrguer, presunto, mussarela, ovo, bacon, milho, alface, tomate.",
+            "image_url": "assets/bem-te-vi.jpg",
+            "carnes": [{"nome": "Hambúrguer", "price": 0}]
+        },
+        {
+            "name": "BEIJA-FLOR",
+            "price": 26.0,
+            "category": "Lanche",
+            "description": "Pão, hambúrguer, presunto, mussarela, ovo, requeijão, cenoura, milho, ervilha, alface, tomate.",
+            "image_url": "assets/beija-flor.jpg",
+            "carnes": [{"nome": "Hambúrguer", "price": 0}]
+        },
+        {
+            "name": "BEM-TE-VI-ARTESANAL",
+            "price": 30.0,
+            "category": "Lanche",
+            "description": "Pão, Hambúrguer da casa, presunto, mussarela, ovo, bacon, cenoura, milho, alface, tomate.",
+            "image_url": "assets/bem-te-vi-artesanal.jpg",
+            "carnes": [{"nome": "Hambúrguer da casa", "price": 0}]
+        },
+        {
+            "name": "VEGETARIANO",
+            "price": 18.0,
+            "category": "Lanche",
+            "description": "Pão, 2 mussarelas, ovo, requeijão, cenoura, milho, alface, tomate, batata palha.",
+            "image_url": "assets/vegetariano.jpg",
+            "carnes": []  # Sem carne
+        },
+        {
+            "name": "CEGONHA-KIDS",
+            "price": 20.0,
+            "category": "Lanche",
+            "description": "Pão, hambúrguer, 2 fatias de presunto, mussarela, ovo, bacon, cheddar, milho, alface, tomate, batata palha.",
+            "image_url": "assets/kids.jpg",
+            "carnes": [{"nome": "Hambúrguer", "price": 0}]
+        },
+        {
+            "name": "X-CAIPIRA",
+            "price": 30.0,
+            "category": "Lanche",
+            "description": "Pão, hambúrguer de linguiça suína, presunto, mussarela, ovo, bacon, cenoura, milho, alface, tomate.",
+            "image_url": "assets/x-caipira.jpg",
+            "carnes": [{"nome": "Hambúrguer de linguiça suína", "price": 0}]
+        },
+        # --- COMBOS ---
+        {
+            "name": "COMBO CALOPSITA + BATATA FRITA",
+            "price": 45.0,
+            "category": "Combo",
             "description": "Pão, Hambúrguer, Presunto, Ovo, Salsicha, Bacon, Creme de Leite, Alface, Tomate, Milho + 250G de Batata Frita",
             "image_url": "assets/combo-calopsita.jpg",
-            "details": {
-                "carnes": [],
-                "acompanhamentos": acompanhamentos_padrao,
-                "adicionais": adicionais_padrao,
-                "bebidas": bebidas_padrao
-            }
+            "carnes": []
+        },
+        {
+            "name": "COMBO-ESPECIAL",
+            "price": 80.0,
+            "category": "Combo",
+            "description": "3 BEM-TE-VI: Pão, hambúrguer, presunto, mussarela, ovo, bacon, milho, alface, tomate + 1 Cotuba 2L",
+            "image_url": "assets/combo-especial.jpg",
+            "carnes": []
         }
     ]
 
-    print("🍔 Criando produtos...")
-    for p_data in products_data:
+    print(f"🍔 Inserindo {len(all_products)} produtos...")
+
+    for p in all_products:
+        # Monta o JSON de detalhes unificando as listas comuns com as específicas do produto
+        details_structure = {
+            "carnes": p["carnes"],
+            "acompanhamentos": acompanhamentos,
+            "adicionais": adicionais,
+            "bebidas": bebidas
+        }
+
         new_prod = Product(
-            name=p_data['name'],
-            description=p_data['description'],
-            price=p_data['price'],
-            image_url=p_data['image_url'],
-            category=p_data['category'],
+            name=p['name'],
+            description=p['description'],
+            price=p['price'],
+            image_url=p['image_url'],
+            category=p['category'],
             is_available=True,
-            details_json=json.dumps(p_data['details'])
+            details_json=json.dumps(details_structure)
         )
         db.session.add(new_prod)
 
     db.session.commit()
     print("✅ Menu populado com sucesso!")
 
-def seed_database():
-    with app.app_context():
-        # Limpa produtos antigos para não duplicar
-        db.session.query(Product).delete()
-        db.create_all()
-        create_super_admin()
-        seed_products()
-
-        # --- DADOS PADRÃO (REPETEM EM QUASE TODOS) ---
-        adicionais_padrao = [
-            {"nome": "Hambúrguer", "price": 2.5},
-            {"nome": "Hambúrguer Artesanal", "price": 5.0},
-            {"nome": "Mussarela", "price": 3.0},
-            {"nome": "Bacon", "price": 3.0},
-            {"nome": "Salsicha", "price": 2.0},
-            {"nome": "Ovo", "price": 2.0},
-            {"nome": "Requeijão ou cheddar", "price": 2.0},
-            {"nome": "Batata Palha", "price": 3.0},
-        ]
-
-        acompanhamentos_padrao = [
-            {"nome": "Porção de batata porção inteira", "price": 30.0},
-            {"nome": "Porção de batata porção 1/2", "price": 20.0},
-            {"nome": "Bacon e cheddar porção inteira", "price": 40.0},
-            {"nome": "Bacon e cheddar porção 1/2", "price": 30.0},
-            {"nome": "Calabresa porção inteira", "price": 40.0},
-            {"nome": "Calabresa porção 1/2", "price": 25.0},
-        ]
-
-        # --- LISTA DE PRODUTOS (BASEADA NO SEU API.JS) ---
-        products_data = [
-            # LANCHES
-            {
-                "name": "FALCÃO", "price": 30.0, "category": "Lanche",
-                "description": "Pão, presunto, mussarela, ovo, requeijão, bacon, milho, alface, tomate. (Opções de Carnes: Frango, Lombo ou Filé)",
-                "image_url": "assets/falcao.jpg",
-                "details": {
-                    "carnes": [{"nome": "Frango", "price": 0}, {"nome": "Lombo", "price": 0},
-                               {"nome": "Filé", "price": 0}],
-                    "acompanhamentos": acompanhamentos_padrao,
-                    "adicionais": adicionais_padrao
-                }
-            },
-            {
-                "name": "ÁGUIA", "price": 35.0, "category": "Lanche",
-                "description": "Pão, Hambúrguer da casa, duas fatias de presunto, Mussarela, ovo, Bacon, Cenoura, Milho, Alface, Tomate.",
-                "image_url": "assets/aguia.jpg",
-                "details": {
-                    "carnes": [{"nome": "Hambúrguer", "price": 0}],
-                    "acompanhamentos": acompanhamentos_padrao,
-                    "adicionais": adicionais_padrao
-                }
-            },
-            # ... (Você pode adicionar o resto da lista aqui seguindo o padrão) ...
-
-            # COMBOS
-            {
-                "name": "COMBO CALOPSITA + BATATA FRITA", "price": 45.0, "category": "Combo",
-                "description": "Pão, Hambúrguer, Presunto, Ovo, Salsicha, Bacon, Creme de Leite, Alface, Tomate, Milho + 250G de Batata Frita",
-                "image_url": "assets/combo-calopsita.jpg",
-                "details": {
-                    "carnes": [],
-                    "acompanhamentos": acompanhamentos_padrao,
-                    "adicionais": adicionais_padrao
-                }
-            }
-        ]
-
-        print("Criando produtos...")
-        for p_data in products_data:
-            new_prod = Product(
-                name=p_data['name'],
-                description=p_data['description'],
-                price=p_data['price'],
-                image_url=p_data['image_url'],
-                category=p_data['category'],
-                is_available=True,
-                # AQUI ESTÁ O SEGREDO: Convertemos o dicionário Python para String JSON
-                details_json=json.dumps(p_data['details'])
-            )
-            db.session.add(new_prod)
-
-        db.session.commit()
-        print("Banco de dados populado com sucesso!")
-
 
 if __name__ == '__main__':
-    seed_database()
+    with app.app_context():
+        # Cria tabelas se não existirem
+        db.create_all()
+
+        # Popula dados
+        create_super_admin()
+        seed_products()

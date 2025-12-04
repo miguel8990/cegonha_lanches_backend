@@ -3,6 +3,7 @@ from app.services import auth_service
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from app.decorators import super_admin_required  # Importe o novo decorator
 from app.extensions import limiter
+from flask_jwt_extended import get_jwt
 
 bp_auth = Blueprint('auth', __name__)
 
@@ -78,3 +79,38 @@ def create_restaurant_admin():
         }), 201
     except ValueError as e:
         return jsonify({'error': str(e)}), 400
+
+
+@bp_auth.route('/forgot-password', methods=['POST'])
+def forgot_password():
+    data = request.get_json()
+    email = data.get('email')
+
+    # Chama o serviço (ele cuida de verificar se existe e mandar o email)
+    # Retornamos sempre 200 para evitar enumeração de usuários (segurança)
+    auth_service.request_password_reset(email)
+
+    return jsonify({'message': 'Se o e-mail existir, você receberá um link em breve.'}), 200
+
+
+@bp_auth.route('/reset-password', methods=['POST'])
+@jwt_required()  # O Token do e-mail é um JWT válido, então isso funciona!
+def reset_password_confirm():
+    user_id = get_jwt_identity()
+    claims = get_jwt()  # Pega os dados extras do token
+
+    # Segurança Extra: Verifica se é mesmo um token de reset
+    if claims.get("type") != "password_reset":
+        return jsonify({'error': 'Token inválido para esta operação.'}), 403
+
+    data = request.get_json()
+    new_pass = data.get('new_password')
+
+    try:
+        auth_service.reset_password_with_token(user_id, new_pass)
+        return jsonify({'message': 'Senha alterada com sucesso! Faça login.'}), 200
+    except ValueError as e:
+        return jsonify({'error': str(e)}), 400
+    except Exception:
+        # Pega erro de token expirado do JWT automaticamente
+        return jsonify({'error': 'Link expirado ou inválido.'}), 422
