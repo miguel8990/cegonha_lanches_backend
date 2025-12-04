@@ -1,0 +1,94 @@
+from flask import Blueprint, jsonify, request
+from app.models import Coupon, User, db
+from app.schemas import coupons_schema, coupon_schema, admin_users_schema
+from app.decorators import admin_required
+
+bp_config = Blueprint('config', __name__)
+
+
+# --- CUPONS ---
+
+# app/routes/routes_config.py
+
+# ... (código existente) ...
+
+# --- ROTA PÚBLICA (Para o Site do Cliente) ---
+@bp_config.route('/coupons/public', methods=['GET'])
+def list_public_coupons():
+    # Busca apenas cupons ativos e que ainda não atingiram o limite
+    from app.models import Coupon
+    from app.extensions import db
+
+    # Filtra cupons ativos
+    coupons = Coupon.query.filter_by(is_active=True).all()
+
+    # Filtra logicamente os que têm limite de uso (se usage_limit for definido)
+    valid_coupons = [
+        c for c in coupons
+        if c.usage_limit is None or c.used_count < c.usage_limit
+    ]
+
+    return jsonify(coupons_schema.dump(valid_coupons)), 200
+
+@bp_config.route('/coupons', methods=['GET'])
+@admin_required()
+def list_coupons():
+    coupons = Coupon.query.all()
+    return jsonify(coupons_schema.dump(coupons)), 200
+
+
+@bp_config.route('/coupons', methods=['POST'])
+@admin_required()
+def create_coupon():
+    data = request.get_json()
+
+    # Validação simples
+    if Coupon.query.filter_by(code=data['code']).first():
+        return jsonify({'error': 'Código já existe'}), 400
+
+    new_coupon = Coupon(
+        code=data['code'].upper(),
+        discount_percent=data.get('discount_percent', 0),
+        discount_fixed=data.get('discount_fixed', 0.0),
+        min_purchase=data.get('min_purchase', 0.0),
+        usage_limit=data.get('usage_limit'),
+        is_active=True
+    )
+    db.session.add(new_coupon)
+    db.session.commit()
+    return jsonify(coupon_schema.dump(new_coupon)), 201
+
+
+@bp_config.route('/coupons/<int:id>', methods=['DELETE'])
+@admin_required()
+def delete_coupon(id):
+    c = Coupon.query.get(id)
+    if c:
+        db.session.delete(c)
+        db.session.commit()
+        return jsonify({'message': 'Deletado'}), 200
+    return jsonify({'error': 'Não encontrado'}), 404
+
+
+# --- USUÁRIOS (Relatório) ---
+
+@bp_config.route('/users', methods=['GET'])
+@admin_required()
+def list_users_report():
+    # Lista apenas clientes, não admins
+    users = User.query.filter(User.role != 'super_admin').all()
+
+    # Adiciona contagem de pedidos manual (ou via query complexa)
+    result = []
+    for u in users:
+        user_dict = {
+            "id": u.id,
+            "name": u.name,
+            "whatsapp": u.whatsapp,
+            "email": u.email,
+            "role": u.role,
+            "orders_count": len(u.orders)  # Conta pedidos
+        }
+        result.append(user_dict)
+
+    return jsonify(result), 200

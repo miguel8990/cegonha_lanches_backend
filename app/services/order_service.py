@@ -3,6 +3,7 @@ import json
 from ..schemas import orders_schema
 from sqlalchemy.orm import joinedload  # Import necessário para a otimização (Ticket #ORD-004)
 from datetime import datetime, time
+from ..models import Coupon
 
 
 def create_order_logic(data, user_id=None):
@@ -10,6 +11,7 @@ def create_order_logic(data, user_id=None):
     customer_data = data.get('customer', {})
     address_data = customer_data.get('address', {})
     payment_method_chosen = data.get('payment_method', 'Não informado')
+    coupon_code = data.get('coupon_code')  # <--- Captura o código enviado
 
     if not address_data.get('street') or not address_data.get('number'):
         raise ValueError("Endereço e número são obrigatórios.")
@@ -19,21 +21,19 @@ def create_order_logic(data, user_id=None):
         status='Recebido',
         total_price=0.0,
         payment_method=payment_method_chosen,
-        payment_status='pending',  # Padrão inicial
+        payment_status='pending',
         customer_name=customer_data.get('name'),
         customer_phone=customer_data.get('phone'),
         street=address_data.get('street'),
         number=address_data.get('number'),
         neighborhood=address_data.get('neighborhood'),
         complement=address_data.get('complement')
-
-
     )
 
     db.session.add(new_order)
-    db.session.flush()  # Garante o ID do pedido (Ticket #ORD-001)
+    db.session.flush()
 
-    # 2. Processamento dos Itens
+    # 2. Processamento dos Itens (Cálculo do Total Bruto)
     items_list = data.get('items', [])
     total_order_value = 0.0
 
@@ -41,18 +41,15 @@ def create_order_logic(data, user_id=None):
         raise ValueError("O pedido deve conter pelo menos um item.")
 
     for item_data in items_list:
+        # ... (Lógica existente de processamento dos itens) ...
+        # Mantenha o loop for igual ao que você já tem
         product = Product.query.get(item_data['product_id'])
-
-        # Validação de produto (Ticket #ORD-002)
         if not product:
-            raise ValueError(f"Produto com ID {item_data['product_id']} não encontrado.")
+            raise ValueError(f"Produto ID {item_data['product_id']} não encontrado.")
 
         customizations = item_data.get('customizations', {})
-
-        # [REFATORAÇÃO #ORD-003] A lógica de cálculo agora é uma chamada simples!
         final_price = _calculate_item_price(product, customizations)
 
-        # Criação do Item no Banco
         order_item = OrderItem(
             order_id=new_order.id,
             product_id=product.id,
@@ -61,10 +58,37 @@ def create_order_logic(data, user_id=None):
             customizations_json=json.dumps(customizations)
         )
         db.session.add(order_item)
-
         total_order_value += (final_price * item_data['quantity'])
 
-    # 3. Finalização
+    # 3. Aplicação do Cupom (Segurança Backend)
+    if coupon_code:
+        coupon = Coupon.query.filter_by(code=coupon_code, is_active=True).first()
+
+        if not coupon:
+            raise ValueError(f"Cupom '{coupon_code}' inválido ou expirado.")
+
+        # Verifica limite de uso global
+        if coupon.usage_limit is not None and coupon.used_count >= coupon.usage_limit:
+            raise ValueError("Este cupom atingiu o limite de usos.")
+
+        # Verifica valor mínimo
+        if total_order_value < coupon.min_purchase:
+            raise ValueError(f"O valor mínimo para este cupom é R$ {coupon.min_purchase:.2f}")
+
+        # Calcula desconto
+        discount = 0.0
+        if coupon.discount_percent:
+            discount = total_order_value * (coupon.discount_percent / 100)
+        elif coupon.discount_fixed:
+            discount = coupon.discount_fixed
+
+        # Aplica desconto (não deixa ficar negativo)
+        total_order_value = max(0.0, total_order_value - discount)
+
+        # Incrementa contador de uso
+        coupon.used_count += 1
+
+    # 4. Finalização
     new_order.total_price = total_order_value
     db.session.commit()
 

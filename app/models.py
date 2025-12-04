@@ -1,6 +1,8 @@
 from datetime import datetime
 from .extensions import db
 import json
+import bleach
+from sqlalchemy import event
 
 
 class User(db.Model):
@@ -108,3 +110,61 @@ class ChatMessage(db.Model):
     # user = db.relationship('User', backref='messages')
 
 # ... (resto dos models) ...
+
+# app/models.py
+# ... imports ...
+
+class Coupon(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    code = db.Column(db.String(20), unique=True, nullable=False)
+    discount_percent = db.Column(db.Integer, default=0)  # Ex: 10 para 10%
+    discount_fixed = db.Column(db.Float, default=0.0)  # Ex: 5.00 para R$ 5,00
+
+    min_purchase = db.Column(db.Float, default=0.0)  # Valor mínimo do pedido
+
+    usage_limit = db.Column(db.Integer, nullable=True)  # Quantas pessoas podem usar (Null = infinito)
+    used_count = db.Column(db.Integer, default=0)
+
+    is_active = db.Column(db.Boolean, default=True)
+
+
+# ==============================================================================
+# 🛡️ SEGURANÇA: SANITIZAÇÃO AUTOMÁTICA (XSS PROTECTION)
+# ==============================================================================
+
+def sanitize_text(target, value, oldvalue, initiator):
+    """
+    Remove qualquer tag HTML de campos de texto antes de salvar no banco.
+    Ex: "<script>alert(1)</script>" vira "alert(1)" ou "&lt;script&gt;..."
+    """
+    if value is not None and isinstance(value, str):
+        # tags=[] significa que NENHUMA tag HTML é permitida (remove negrito, links, etc)
+        # strip=True remove o conteúdo da tag perigosa se necessário
+        return bleach.clean(value, tags=[], strip=True)
+    return value
+
+# Aplica a proteção nos campos onde o usuário pode escrever livremente
+
+# 1. Produtos (Protege contra Admin mal intencionado ou invadido)
+event.listen(Product.name, 'set', sanitize_text, retval=True)
+event.listen(Product.description, 'set', sanitize_text, retval=True)
+event.listen(Product.category, 'set', sanitize_text, retval=True)
+
+# 2. Usuários (Protege contra nomes falsos com scripts)
+event.listen(User.name, 'set', sanitize_text, retval=True)
+# O email já é validado por formato, mas mal não faz
+event.listen(User.email, 'set', sanitize_text, retval=True)
+
+# 3. Chat (Muito importante! É onde usuários escrevem livremente)
+event.listen(ChatMessage.message, 'set', sanitize_text, retval=True)
+
+# 4. Pedidos (Observações e endereços podem ser vetores de ataque)
+event.listen(Order.customer_name, 'set', sanitize_text, retval=True)
+event.listen(Order.street, 'set', sanitize_text, retval=True)
+event.listen(Order.complement, 'set', sanitize_text, retval=True)
+event.listen(Order.neighborhood, 'set', sanitize_text, retval=True)
+
+# 5. Endereços
+event.listen(Address.street, 'set', sanitize_text, retval=True)
+event.listen(Address.complement, 'set', sanitize_text, retval=True)
+event.listen(Address.neighborhood, 'set', sanitize_text, retval=True)

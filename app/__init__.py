@@ -7,6 +7,7 @@ from .routes.routes_address import bp_address
 from .routes.routes_chat import bp_chat
 from .routes.routes_upload import bp_upload
 from .extensions import db, jwt, migrate, ma, limiter
+from .routes.routes_config import bp_config
 
 
 
@@ -42,6 +43,7 @@ def create_app():
     app.register_blueprint(bp_payment, url_prefix='/api/payment')
     app.register_blueprint(bp_address, url_prefix='/api/address')
     app.register_blueprint(bp_chat, url_prefix='/api/chat')
+    app.register_blueprint(bp_config, url_prefix='/api/config')
     configure_errors(app)
     import os
     if not os.path.exists(app.config['UPLOAD_FOLDER']):

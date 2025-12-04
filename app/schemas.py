@@ -1,6 +1,7 @@
 from marshmallow import fields
 from .extensions import ma, db
 from .models import User, Product, Order, OrderItem, Address, ChatMessage
+from .models import Coupon
 
 class AddressSchema(ma.SQLAlchemyAutoSchema):
 
@@ -60,6 +61,21 @@ class ChatMessageSchema(ma.SQLAlchemyAutoSchema):
         load_instance = True
         include_fk = True
 
+class CouponSchema(ma.SQLAlchemyAutoSchema):
+    class Meta:
+        model = Coupon
+        load_instance = True
+
+class AdminUserListSchema(ma.SQLAlchemyAutoSchema):
+    # [CORREÇÃO] Definimos explicitamente que este campo é um Inteiro e é apenas para leitura (dump)
+    orders_count = fields.Int(dump_only=True)
+
+    class Meta:
+        model = User
+        # Agora o Marshmallow sabe de onde tirar o 'orders_count' (da linha acima)
+        fields = ("id", "name", "email", "whatsapp", "role", "orders_count")
+        load_instance = True
+
 
 # --- INSTÂNCIAS (SINGLE E LISTAS) ---
 
@@ -85,3 +101,7 @@ addresses_schema = AddressSchema(many=True)
 
 chat_message_schema = ChatMessageSchema()
 chat_messages_schema = ChatMessageSchema(many=True)
+
+coupon_schema = CouponSchema()
+coupons_schema = CouponSchema(many=True)
+admin_users_schema = AdminUserListSchema(many=True)
