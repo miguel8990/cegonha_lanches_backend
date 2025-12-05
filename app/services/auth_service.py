@@ -5,6 +5,7 @@ from flask_jwt_extended import create_access_token
 from datetime import timedelta
 from .email_services import send_reset_email
 
+
 # --- FUNÇÃO AUXILIAR DE VALIDAÇÃO ---
 def validate_password_strength(password):
     """

@@ -12,6 +12,7 @@ class User(db.Model):
     password_hash = db.Column(db.String(256), nullable=False)
     role = db.Column(db.String(20), default='client')
 
+
     # Apenas dados de contato diretos
     whatsapp = db.Column(db.String(20))
 

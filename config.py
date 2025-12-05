@@ -7,7 +7,7 @@ load_dotenv()
 
 class Config:
     # Segurança básica
-    SECRET_KEY = os.environ.get('SECRET_KEY') or 'chave-super-secreta-do-desenvolvedor'
+    SECRET_KEY = os.environ.get('SECRET_KEY')
 
     # Banco de Dados
     SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or 'sqlite:///cegonha.db'
@@ -20,3 +20,5 @@ class Config:
     BASE_DIR = os.path.abspath(os.path.dirname(__file__))
     UPLOAD_FOLDER = os.path.join(BASE_DIR, 'app', 'static', 'uploads')
     MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # Limite de 16MB por foto
+    MP_ACCESS_TOKEN = os.environ.get('MP_ACCESS_TOKEN')
+    BASE_URL = os.environ.get('BASE_URL') or 'http://localhost:8000'

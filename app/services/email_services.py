@@ -41,7 +41,8 @@ def send_reset_email(to_email, reset_token):
     <a href="{reset_link}" style="background-color:#d93025; color:white; padding:10px 20px; text-decoration:none; border-radius:5px;">
         Redefinir Minha Senha
     </a>
-    <p>Ou copie este link: {reset_link}</p>
+    <p>Ou copie este link:</p>
+    <p>{reset_link}</p>
     <p>Este link expira em 30 minutos.</p>
     <p>Se não foi você, ignore este e-mail.</p>
     """
@@ -59,3 +60,6 @@ def send_reset_email(to_email, reset_token):
     # Dispara a thread (não bloqueia o retorno da API)
     thread = threading.Thread(target=_send_async_email, args=(app, msg))
     thread.start()
+
+
+

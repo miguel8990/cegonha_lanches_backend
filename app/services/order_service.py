@@ -6,6 +6,7 @@ from datetime import datetime, time
 from ..models import Coupon
 
 
+
 def create_order_logic(data, user_id=None):
     # 1. Validação e Cabeçalho
     customer_data = data.get('customer', {})
@@ -92,7 +93,22 @@ def create_order_logic(data, user_id=None):
     new_order.total_price = total_order_value
     db.session.commit()
 
-    return new_order
+    payment_response = None
+    if payment_method_chosen == 'mercadopago':
+        from app.services import payment_service
+        # Prepara dados para o payment service
+        pay_data = {"order_id": new_order.id, "payment_method": "mercadopago"}
+        payment_response = payment_service.process_payment_logic(user_id, pay_data)
+
+    # Retornamos um dicionário combinado
+    result = orders_schema.dump([new_order])[0]
+
+    if payment_response and payment_response.get('redirect_url'):
+        result['redirect_url'] = payment_response['redirect_url']
+
+    return result
+
+
 
 
 def get_order_logic(user_id):

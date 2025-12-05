@@ -21,9 +21,14 @@ def create_order():
     user_id = get_jwt_identity()
 
     try:
-        order = services.order_service.create_order_logic(data, user_id=user_id)
-        # Retorna o pedido completo (com preços calculados)
-        return jsonify(order_schema.dump(order)), 201
+        result = services.order_service.create_order_logic(data, user_id=user_id)
+
+        # Se já vier como dict (caso do MP), retorna direto
+        if isinstance(result, dict):
+            return jsonify(result), 201
+
+        # Se vier como objeto Order (caso normal), faz dump
+        return jsonify(order_schema.dump(result)), 201
     except ValueError as e:
         return jsonify({'error': str(e)}), 400
 
