@@ -4,6 +4,7 @@ from app.models import Product, User
 from werkzeug.security import generate_password_hash
 import json
 import os
+from app.models import StoreSchedule # Adicione o import
 
 app = create_app()
 
@@ -223,6 +224,28 @@ def seed_products():
     print("✅ Menu populado com sucesso!")
 
 
+def seed_schedule():
+    """Cria os horários padrão se não existirem"""
+    if StoreSchedule.query.count() > 0:
+        print("⏰ Horários já configurados.")
+        return
+
+    print("⏰ Criando horários padrão...")
+    # 0=Domingo (Fechado), 1-6 (Aberto 18:30-22:30)
+    padrao_dias = []
+    for i in range(7):
+        fechado = (i == 0)  # Domingo fechado por padrão
+        dia = StoreSchedule(
+            day_of_week=i,
+            open_time="18:30",
+            close_time="22:30",
+            is_closed=fechado
+        )
+        db.session.add(dia)
+
+    db.session.commit()
+    print("✅ Horários criados!")
+
 if __name__ == '__main__':
     with app.app_context():
         # Cria tabelas se não existirem
@@ -231,3 +254,4 @@ if __name__ == '__main__':
         # Popula dados
         create_super_admin()
         seed_products()
+        seed_schedule()

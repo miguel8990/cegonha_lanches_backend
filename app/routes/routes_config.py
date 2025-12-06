@@ -2,6 +2,8 @@ from flask import Blueprint, jsonify, request
 from app.models import Coupon, User, db
 from app.schemas import coupons_schema, coupon_schema, admin_users_schema
 from app.decorators import admin_required
+from app.models import StoreSchedule
+from app.schemas import schedule_list_schema
 
 bp_config = Blueprint('config', __name__)
 
@@ -29,6 +31,12 @@ def list_public_coupons():
     ]
 
     return jsonify(coupons_schema.dump(valid_coupons)), 200
+
+@bp_config.route('/schedule', methods=['GET'])
+def get_schedule():
+    # Rota PÚBLICA para o site saber se está aberto
+    schedules = StoreSchedule.query.order_by(StoreSchedule.day_of_week).all()
+    return jsonify(schedule_list_schema.dump(schedules)), 200
 
 @bp_config.route('/coupons', methods=['GET'])
 @admin_required()
@@ -69,6 +77,25 @@ def delete_coupon(id):
         return jsonify({'message': 'Deletado'}), 200
     return jsonify({'error': 'Não encontrado'}), 404
 
+
+@bp_config.route('/schedule', methods=['PUT'])
+@admin_required()
+def update_schedule():
+    # Recebe uma lista de dias para atualizar
+    data = request.get_json()  # Espera uma lista: [{day_of_week: 0, open_time: ...}, ...]
+
+    try:
+        for item in data:
+            day = StoreSchedule.query.filter_by(day_of_week=item['day_of_week']).first()
+            if day:
+                day.open_time = item.get('open_time', day.open_time)
+                day.close_time = item.get('close_time', day.close_time)
+                day.is_closed = item.get('is_closed', day.is_closed)
+
+        db.session.commit()
+        return jsonify({'message': 'Horários atualizados!'}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 400
 
 # --- USUÁRIOS (Relatório) ---
 

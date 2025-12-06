@@ -1,6 +1,6 @@
 from marshmallow import fields
 from .extensions import ma, db
-from .models import User, Product, Order, OrderItem, Address, ChatMessage
+from .models import User, Product, Order, OrderItem, Address, ChatMessage, Neighborhood, StoreSchedule
 from .models import Coupon
 
 class AddressSchema(ma.SQLAlchemyAutoSchema):
@@ -76,6 +76,16 @@ class AdminUserListSchema(ma.SQLAlchemyAutoSchema):
         fields = ("id", "name", "email", "whatsapp", "role", "orders_count")
         load_instance = True
 
+class NeighborhoodSchema(ma.SQLAlchemyAutoSchema):
+    class Meta:
+        model = Neighborhood
+        load_instance = True
+
+class StoreScheduleSchema(ma.SQLAlchemyAutoSchema):
+    class Meta:
+        model = StoreSchedule
+        load_instance = True
+
 
 # --- INSTÂNCIAS (SINGLE E LISTAS) ---
 
@@ -105,3 +115,9 @@ chat_messages_schema = ChatMessageSchema(many=True)
 coupon_schema = CouponSchema()
 coupons_schema = CouponSchema(many=True)
 admin_users_schema = AdminUserListSchema(many=True)
+
+neighborhood_schema = NeighborhoodSchema()
+neighborhoods_schema = NeighborhoodSchema(many=True)
+
+
+schedule_list_schema = StoreScheduleSchema(many=True)

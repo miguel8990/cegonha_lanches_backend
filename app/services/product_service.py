@@ -37,6 +37,7 @@ def create_product(data):
 
     try:
         new_product = product_schema.load(data, session=db.session)
+        new_product.stock_quantity = data.get('stock_quantity')
         new_product.details_json = json.dumps(details_data)  # Salva manual
 
         db.session.add(new_product)

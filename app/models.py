@@ -50,6 +50,7 @@ class Product(db.Model):
     category = db.Column(db.String(50), default='Lanche')
     details_json = db.Column(db.Text, default='{}')
     is_available = db.Column(db.Boolean, default=True)
+    stock_quantity = db.Column(db.Integer, nullable=True)
 
     def get_details(self):
         try:
@@ -69,6 +70,7 @@ class Order(db.Model):
     # SNAPSHOT DO CLIENTE (Dados fixos da hora da compra)
     customer_name = db.Column(db.String(100))
     customer_phone = db.Column(db.String(20))
+    delivery_fee = db.Column(db.Float, default=0.0)
 
     # O Pedido PRECISA ter endereço próprio (Snapshot)
     # Se você tirar isso, e o cliente mudar o endereço na tabela Address,
@@ -109,6 +111,19 @@ class ChatMessage(db.Model):
 
     # Relacionamento (Opcional, ajuda na consulta)
     # user = db.relationship('User', backref='messages')
+
+class Neighborhood(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False, unique=True)
+    price = db.Column(db.Float, default=0.0)
+    is_active = db.Column(db.Boolean, default=True)
+
+class StoreSchedule(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    day_of_week = db.Column(db.Integer, unique=True, nullable=False) # 0=Dom, 1=Seg, ..., 6=Sab
+    open_time = db.Column(db.String(5), default="18:30") # Formato "HH:MM"
+    close_time = db.Column(db.String(5), default="22:30")
+    is_closed = db.Column(db.Boolean, default=False)
 
 # ... (resto dos models) ...
 

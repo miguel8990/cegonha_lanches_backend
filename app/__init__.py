@@ -8,6 +8,7 @@ from .routes.routes_chat import bp_chat
 from .routes.routes_upload import bp_upload
 from .extensions import db, jwt, migrate, ma, limiter
 from .routes.routes_config import bp_config
+
 import os
 
 
@@ -45,6 +46,8 @@ def create_app():
     from .routes.routes_orders import bp_orders
     from .routes.routes_auth import bp_auth
     from .routes.routes_payment import bp_payment
+    from .routes.routes_delivery import bp_delivery
+    from .routes.routes_reports import bp_reports
 
     # Registro das Rotas (Isso continua igual, ou você pode ajustar o prefixo se quiser)
     app.register_blueprint(bp_menu, url_prefix='/api/menu')
@@ -54,6 +57,8 @@ def create_app():
     app.register_blueprint(bp_address, url_prefix='/api/address')
     app.register_blueprint(bp_chat, url_prefix='/api/chat')
     app.register_blueprint(bp_config, url_prefix='/api/config')
+    app.register_blueprint(bp_delivery, url_prefix='/api/delivery')
+    app.register_blueprint(bp_reports, url_prefix='/api/reports')
     configure_errors(app)
     import os
     if not os.path.exists(app.config['UPLOAD_FOLDER']):
