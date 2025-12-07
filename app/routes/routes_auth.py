@@ -1,9 +1,16 @@
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, jsonify, request, redirect
 from app.services import auth_service
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from app.decorators import super_admin_required  # Importe o novo decorator
 from app.extensions import limiter
 from flask_jwt_extended import get_jwt
+from app.models import User, db
+from app.services.auth_service import create_token
+from app.services.email_services import send_verification_email
+from flask_jwt_extended import create_access_token, decode_token
+import datetime
+import os
+
 
 bp_auth = Blueprint('auth', __name__)
 
@@ -14,34 +21,86 @@ bp_auth = Blueprint('auth', __name__)
 @limiter.limit("5 per day")
 def register():
     data = request.get_json()
+
+    if User.query.filter_by(email=data['email']).first():
+        return jsonify({'message': 'Email já cadastrado'}), 400
+
+    # Cria usuário, mas NÃO verificado
+    user = User(
+        name=data['name'],
+        email=data['email'],
+        password=data['password'],  # O modelo deve fazer hash
+        phone=data.get('phone'),
+        is_verified=False
+    )
+
+    db.session.add(user)
+    db.session.commit()
+
+    # Gera token específico para verificação (expira em 24h)
+    verification_token = create_access_token(
+        identity=user.id,
+        additional_claims={"type": "email_verification"},
+        expires_delta=datetime.timedelta(hours=24)
+    )
+
+    # Envia email
+    send_verification_email(user.email, user.name, verification_token)
+
+    return jsonify({
+        'message': 'Cadastro realizado! Verifique seu email para ativar a conta.',
+        'require_verification': True
+    }), 201
+
+
+@bp_auth.route('/confirm-email', methods=['GET'])
+@limiter.limit("5 per day")
+def confirm_email():
+    token = request.args.get('token')
+    frontend_url = os.getenv('FRONTEND_URL', 'http://localhost:8000')
+
     try:
-        # Pega dados opcionais com .get() para evitar erro se não vierem
-        new_user = auth_service.register_user(
-            name=data['name'],
-            email=data['email'],
-            password=data['password'],
-            whatsapp=data.get('whatsapp'),
-            street=data.get('street'),
-            number=data.get('number'),
-            neighborhood=data.get('neighborhood'),
-            complement=data.get('complement')
-        )
-        return jsonify({'message': 'Cliente criado com sucesso!'}), 201
-    except ValueError as e:
-        return jsonify({'message': str(e)}), 400
+        # Decodifica o token
+        decoded = decode_token(token)
+
+        if decoded.get("type") != "email_verification":
+            raise Exception("Token inválido")
+
+        user_id = decoded["sub"]
+        user = User.query.get(user_id)
+
+        if not user:
+            return redirect(f"{frontend_url}/index.html?status=error_user")
+
+        user.is_verified = True
+        db.session.commit()
+
+        # Gera token de login real para o usuário já entrar logado
+        login_token = create_token(user.id)
+
+        # Redireciona para o Front com o token na URL (para o JS pegar e logar)
+        return redirect(
+            f"{frontend_url}/index.html?status=verified&token={login_token}&name={user.name}&role={user.role}")
+
+    except Exception as e:
+        print(e)
+        return redirect(f"{frontend_url}/index.html?status=error_token")
 
 
 @bp_auth.route('/login', methods=['POST'])
 @limiter.limit("10 per minute")
 def login():
     data = request.get_json()
-    result = auth_service.login_user(data['email'], data['password'])
+    user = User.query.filter_by(email=data['email']).first()
 
-    if result:
-        return jsonify({'message': 'Bem-vindo!', **result}), 200
+    if user and user.verify_password(data['password']):
+        if not user.is_verified:
+            return jsonify({'message': 'Conta não verificada. Cheque seu email.'}), 403
+
+        token = create_token(user.id)
+        return jsonify({'token': token, 'user': user.to_dict()}), 200
 
     return jsonify({'message': 'Credenciais inválidas'}), 401
-
 
 # app/routes/routes_auth.py
 
@@ -114,3 +173,18 @@ def reset_password_confirm():
     except Exception:
         # Pega erro de token expirado do JWT automaticamente
         return jsonify({'error': 'Link expirado ou inválido.'}), 422
+
+
+
+@app.route('/api/admin/dados', methods=['GET'])
+@jwt_required() # 1. Verifica se tem token de login
+def pegar_dados_admin():
+    user_id = get_jwt_identity()
+    user = User.query.get(user_id)
+
+    # 2. VERIFICAÇÃO DE SEGURANÇA FINAL 👇
+    if user.role != 'super_admin':
+        return jsonify({'message': 'Acesso proibido!'}), 403
+
+    # Se passar, entrega o ouro
+    return jsonify(dados_secretos)

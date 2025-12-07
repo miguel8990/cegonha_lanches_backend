@@ -33,6 +33,12 @@ def validate_password_strength(password):
 
     return True, None
 
+def create_token(user_id):
+    """
+    Gera um token de acesso padrão para o usuário.
+    Centraliza a criação de tokens para ser usada no login e na confirmação de email.
+    """
+    return create_access_token(identity=str(user_id))
 
 def register_user(name, email, password, whatsapp=None, street=None, number=None, neighborhood=None, complement=None):
     """

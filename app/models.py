@@ -3,6 +3,8 @@ from .extensions import db
 import json
 import bleach
 from sqlalchemy import event
+from werkzeug.security import generate_password_hash, check_password_hash
+
 
 
 class User(db.Model):
@@ -11,6 +13,7 @@ class User(db.Model):
     email = db.Column(db.String(120), unique=True, nullable=False)
     password_hash = db.Column(db.String(256), nullable=False)
     role = db.Column(db.String(20), default='client')
+    is_verified = db.Column(db.Boolean, default=False)
 
 
     # Apenas dados de contato diretos
@@ -26,8 +29,19 @@ class User(db.Model):
         return self.role in ['admin', 'super_admin']
 
     def to_dict(self):
-        return {"id": self.id, "name": self.name, "email": self.email, "role": self.role}
+        return {"id": self.id, "name": self.name, "email": self.email, "role": self.role, "is_verified": self.is_verified}
 
+    @property
+    def password(self):
+        raise AttributeError('A senha não é um atributo legível')
+
+    @password.setter
+    def password(self, password):
+        self.password_hash = generate_password_hash(password)
+
+    def verify_password(self, password):
+        # Esta é a função que o erro diz que falta!
+        return check_password_hash(self.password_hash, password)
 
 class Address(db.Model):
     id = db.Column(db.Integer, primary_key=True)

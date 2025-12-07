@@ -1,8 +1,8 @@
-"""Reset Clean
+"""Recriando banco
 
-Revision ID: 9188183ecc51
+Revision ID: 9903451f25d2
 Revises: 
-Create Date: 2025-12-05 12:25:01.114442
+Create Date: 2025-12-07 10:07:32.922752
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = '9188183ecc51'
+revision = '9903451f25d2'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -30,6 +30,14 @@ def upgrade():
     sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('code')
     )
+    op.create_table('neighborhood',
+    sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('name', sa.String(length=100), nullable=False),
+    sa.Column('price', sa.Float(), nullable=True),
+    sa.Column('is_active', sa.Boolean(), nullable=True),
+    sa.PrimaryKeyConstraint('id'),
+    sa.UniqueConstraint('name')
+    )
     op.create_table('product',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('name', sa.String(length=100), nullable=False),
@@ -39,7 +47,17 @@ def upgrade():
     sa.Column('category', sa.String(length=50), nullable=True),
     sa.Column('details_json', sa.Text(), nullable=True),
     sa.Column('is_available', sa.Boolean(), nullable=True),
+    sa.Column('stock_quantity', sa.Integer(), nullable=True),
     sa.PrimaryKeyConstraint('id')
+    )
+    op.create_table('store_schedule',
+    sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('day_of_week', sa.Integer(), nullable=False),
+    sa.Column('open_time', sa.String(length=5), nullable=True),
+    sa.Column('close_time', sa.String(length=5), nullable=True),
+    sa.Column('is_closed', sa.Boolean(), nullable=True),
+    sa.PrimaryKeyConstraint('id'),
+    sa.UniqueConstraint('day_of_week')
     )
     op.create_table('user',
     sa.Column('id', sa.Integer(), nullable=False),
@@ -47,6 +65,7 @@ def upgrade():
     sa.Column('email', sa.String(length=120), nullable=False),
     sa.Column('password_hash', sa.String(length=256), nullable=False),
     sa.Column('role', sa.String(length=20), nullable=True),
+    sa.Column('is_verified', sa.Boolean(), nullable=True),
     sa.Column('whatsapp', sa.String(length=20), nullable=True),
     sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('email')
@@ -78,6 +97,7 @@ def upgrade():
     sa.Column('total_price', sa.Float(), nullable=True),
     sa.Column('customer_name', sa.String(length=100), nullable=True),
     sa.Column('customer_phone', sa.String(length=20), nullable=True),
+    sa.Column('delivery_fee', sa.Float(), nullable=True),
     sa.Column('street', sa.String(length=200), nullable=True),
     sa.Column('number', sa.String(length=20), nullable=True),
     sa.Column('neighborhood', sa.String(length=100), nullable=True),
@@ -109,6 +129,8 @@ def downgrade():
     op.drop_table('chat_message')
     op.drop_table('address')
     op.drop_table('user')
+    op.drop_table('store_schedule')
     op.drop_table('product')
+    op.drop_table('neighborhood')
     op.drop_table('coupon')
     # ### end Alembic commands ###

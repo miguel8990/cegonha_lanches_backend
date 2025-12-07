@@ -5,6 +5,8 @@ from email.mime.multipart import MIMEMultipart
 from flask import current_app
 import os
 import threading
+import requests
+from flask import url_for
 
 
 def _send_async_email(app, msg):
@@ -62,4 +64,52 @@ def send_reset_email(to_email, reset_token):
     thread.start()
 
 
+def send_verification_email(user_email, user_name, token):
+    api_key = os.getenv('BREVO_API_KEY')
+    if not api_key:
+        print("⚠️ BREVO_API_KEY não configurada.")
+        return False
 
+    # URL do Backend que valida o token (Magic Link)
+    # Ajuste o base_url para o seu domínio real em produção
+    base_url = os.getenv('API_BASE_URL', 'http://localhost:5000')
+    magic_link = f"{base_url}/api/auth/confirm-email?token={token}"
+
+    url = "https://api.brevo.com/v3/smtp/email"
+
+    headers = {
+        "accept": "application/json",
+        "api-key": api_key,
+        "content-type": "application/json"
+    }
+
+    payload = {
+        "sender": {"name": "Cegonha Lanches", "email": "nao-responda@cegonhalanches.com"},
+        "to": [{"email": user_email, "name": user_name}],
+        "subject": "Confirme seu cadastro - Cegonha Lanches",
+        "htmlContent": f"""
+            <html>
+            <body>
+                <h1>Olá, {user_name}!</h1>
+                <p>Falta pouco para finalizar seu cadastro.</p>
+                <p>Clique no botão abaixo para confirmar seu email e liberar seus pedidos:</p>
+                <a href="{magic_link}" style="background-color:#f2c94c; color:#000; padding:10px 20px; text-decoration:none; border-radius:5px; font-weight:bold;">
+                    CONFIRMAR EMAIL
+                </a>
+                <p>Ou copie o link: {magic_link}</p>
+            </body>
+            </html>
+        """
+    }
+
+    try:
+        response = requests.post(url, json=payload, headers=headers)
+        if response.status_code in [200, 201, 202]:
+            print(f"📧 Email enviado para {user_email}")
+            return True
+        else:
+            print(f"❌ Erro Brevo: {response.text}")
+            return False
+    except Exception as e:
+        print(f"❌ Erro envio email: {str(e)}")
+        return False

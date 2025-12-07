@@ -27,7 +27,8 @@ def create_super_admin():
         email=SUPER_EMAIL,
         password_hash=generate_password_hash(SUPER_PASS),
         role="super_admin",
-        whatsapp="0000000000"
+        whatsapp="0000000000",
+        is_verified=True
     )
 
     db.session.add(super_admin)
