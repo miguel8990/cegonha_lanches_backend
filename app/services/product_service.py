@@ -89,6 +89,7 @@ def toggle_availability(product_id):
 def delete_product(product_id, password_attempt):
     """
     Hard Delete com verificação de Senha Mestra.
+    CORREÇÃO APLICADA: Verifica se o produto tem vendas antes de deletar.
     """
     # 1. Busca a senha real no .env
     master_pass = os.getenv('DELETE_PASSWORD')
@@ -101,6 +102,22 @@ def delete_product(product_id, password_attempt):
     if not product:
         raise ValueError("Produto não encontrado.")
 
+    # 3. [NOVO] Verificação de Integridade Referencial
+    # Importação interna para evitar ciclo de imports
+    from ..models import OrderItem
+
+    # Procura se existe ALGUM item de pedido com este ID de produto
+    vendas_existentes = OrderItem.query.filter_by(product_id=product.id).first()
+
+    if vendas_existentes:
+        # Se achou venda, BLOQUEIA a deleção.
+        # Motivo: Se apagar, os pedidos antigos ficarão corrompidos (sem produto).
+        raise ValueError(
+            "Este produto NÃO pode ser excluído pois faz parte do histórico de vendas. "
+            "Recomendação: Apenas desative a disponibilidade dele."
+        )
+
+    # Se passou por tudo, apaga.
     db.session.delete(product)
     db.session.commit()
     return True

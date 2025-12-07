@@ -13,10 +13,13 @@ bp_orders = Blueprint('orders', __name__)
 # ==============================================================================
 
 @bp_orders.route('/create', methods=['POST'])
-@jwt_required(optional=True)
+@jwt_required()
 def create_order():
     data = request.get_json()
     user_id = get_jwt_identity()
+    # Validação extra de segurança: Garante que user_id existe
+    if not user_id:
+        return jsonify({'error': 'Usuário não autenticado.'}), 401
 
     try:
         result = services.order_service.create_order_logic(data, user_id=user_id)
