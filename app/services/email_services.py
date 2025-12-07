@@ -64,52 +64,102 @@ def send_reset_email(to_email, reset_token):
     thread.start()
 
 
-def send_verification_email(user_email, user_name, token):
-    api_key = os.getenv('BREVO_API_KEY')
-    if not api_key:
-        print("⚠️ BREVO_API_KEY não configurada.")
-        return False
+# No arquivo app/services/email_services.py
 
-    # URL do Backend que valida o token (Magic Link)
-    # Ajuste o base_url para o seu domínio real em produção
+def send_verification_email(user_email, user_name, token):
+    """
+    Envia o e-mail de verificação usando o servidor SMTP configurado (padronizado).
+    """
+    # 1. Definir a URL do Backend (API)
+    # Usa API_BASE_URL se existir, senão assume localhost:5000
     base_url = os.getenv('API_BASE_URL', 'http://localhost:5000')
     magic_link = f"{base_url}/api/auth/confirm-email?token={token}"
 
-    url = "https://api.brevo.com/v3/smtp/email"
+    # 2. Configurar Remetente e Assunto
+    # Tenta usar o MAIL_DEFAULT_SENDER, se não tiver, usa o MAIL_USERNAME
+    sender = os.getenv('MAIL_DEFAULT_SENDER', os.getenv('MAIL_USERNAME'))
+    subject = "Confirme seu cadastro - Cegonha Lanches"
 
-    headers = {
-        "accept": "application/json",
-        "api-key": api_key,
-        "content-type": "application/json"
-    }
+    # 3. Montar o Corpo do E-mail
+    html_body = f"""
+        <html>
+        <body>
+            <h1>Olá, {user_name}!</h1>
+            <p>Falta pouco para finalizar seu cadastro.</p>
+            <p>Clique no botão abaixo para confirmar seu email e liberar seus pedidos:</p>
+            <a href="{magic_link}" style="background-color:#f2c94c; color:#000; padding:10px 20px; text-decoration:none; border-radius:5px; font-weight:bold;">
+                CONFIRMAR EMAIL
+            </a>
+            <p>Ou copie o link: {magic_link}</p>
+        </body>
+        </html>
+    """
 
-    payload = {
-        "sender": {"name": "Cegonha Lanches", "email": "nao-responda@cegonhalanches.com"},
-        "to": [{"email": user_email, "name": user_name}],
-        "subject": "Confirme seu cadastro - Cegonha Lanches",
-        "htmlContent": f"""
-            <html>
-            <body>
-                <h1>Olá, {user_name}!</h1>
-                <p>Falta pouco para finalizar seu cadastro.</p>
-                <p>Clique no botão abaixo para confirmar seu email e liberar seus pedidos:</p>
-                <a href="{magic_link}" style="background-color:#f2c94c; color:#000; padding:10px 20px; text-decoration:none; border-radius:5px; font-weight:bold;">
-                    CONFIRMAR EMAIL
+    # 4. Criar o objeto MIME (Necessário para o smtplib)
+    msg = MIMEMultipart()
+    msg['From'] = sender
+    msg['To'] = user_email
+    msg['Subject'] = subject
+    msg.attach(MIMEText(html_body, 'html'))
+
+    # 5. Enviar usando a função assíncrona existente (_send_async_email)
+    try:
+        # Captura o app atual para passar para a thread (contexto do Flask)
+        app = current_app._get_current_object()
+
+        # Cria e inicia a thread usando a função que você já tem
+        thread = threading.Thread(target=_send_async_email, args=(app, msg))
+        thread.start()
+
+        return True
+    except Exception as e:
+        print(f"❌ Erro ao preparar envio de email: {str(e)}")
+        return False
+
+
+# ... (mantenha os imports e as outras funções: _send_async_email, send_reset_email, etc) ...
+
+def send_magic_link_email(to_email, user_name, link_url):
+    """
+    Envia o Magic Link para login sem senha.
+    """
+    subject = "Seu Link Mágico de Acesso ✨ - Cegonha Lanches"
+    sender = os.getenv('MAIL_DEFAULT_SENDER', os.getenv('MAIL_USERNAME'))
+
+    html_body = f"""
+    <html>
+        <body style="font-family: Arial, sans-serif; text-align: center; color: #333;">
+            <div style="max-width: 500px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px;">
+                <h2 style="color: #d93025;">Olá, {user_name}!</h2>
+                <p>Você solicitou um acesso rápido sem senha.</p>
+                <p>Clique no botão abaixo para entrar imediatamente:</p>
+
+                <a href="{link_url}" 
+                   style="display: inline-block; background-color: #f2c94c; color: #000; padding: 15px 25px; 
+                          text-decoration: none; border-radius: 5px; font-weight: bold; font-size: 16px; margin: 20px 0;">
+                    ENTRAR AGORA
                 </a>
-                <p>Ou copie o link: {magic_link}</p>
-            </body>
-            </html>
-        """
-    }
+
+                <p style="font-size: 12px; color: #777;">
+                    Este link é válido por 15 minutos.<br>
+                    Se não foi você, ignore este e-mail.
+                </p>
+            </div>
+        </body>
+    </html>
+    """
+
+    msg = MIMEMultipart()
+    msg['From'] = sender
+    msg['To'] = to_email
+    msg['Subject'] = subject
+    msg.attach(MIMEText(html_body, 'html'))
 
     try:
-        response = requests.post(url, json=payload, headers=headers)
-        if response.status_code in [200, 201, 202]:
-            print(f"📧 Email enviado para {user_email}")
-            return True
-        else:
-            print(f"❌ Erro Brevo: {response.text}")
-            return False
+        app = current_app._get_current_object()
+        thread = threading.Thread(target=_send_async_email, args=(app, msg))
+        thread.start()
+        return True
     except Exception as e:
-        print(f"❌ Erro envio email: {str(e)}")
+        print(f"❌ Erro ao enviar Magic Link: {str(e)}")
         return False
