@@ -2,6 +2,7 @@ from ..models import ChatMessage, db, User
 from ..schemas import chat_messages_schema, chat_message_schema
 from datetime import datetime, timedelta
 from sqlalchemy import func
+from ..extensions import socketio
 
 SPAM_COOLDOWN_SECONDS = 2  # Tempo mínimo entre mensagens
 MAX_HISTORY_CHARS = 20000  # Limite de caracteres no histórico
@@ -42,6 +43,10 @@ def send_message_logic(user_id, text, is_admin=False):
     db.session.commit()
     if not is_admin:
         _enforce_storage_limit(user_id)
+    msg_dump = chat_message_schema.dump(new_msg)
+    print(f"📡 Nova mensagem chat (User {user_id})")
+    socketio.emit('chat_message', msg_dump)
+
     if is_first_message:
         # Busca o nome do usuário para personalizar
         user = User.query.get(user_id)
@@ -63,11 +68,11 @@ def send_message_logic(user_id, text, is_admin=False):
         db.session.add(auto_reply)
         db.session.commit()
 
+        bot_msg_dump = chat_message_schema.dump(auto_reply)
+        socketio.emit('chat_message', bot_msg_dump)  # <
 
 
-
-
-    return chat_message_schema.dump(new_msg)
+    return msg_dump
 
 
 def get_user_messages_logic(user_id):

@@ -2,7 +2,7 @@ from flask import Flask
 from flask_cors import CORS
 from .errors import configure_errors
 from config import Config
-from .extensions import db, jwt, migrate, ma
+from .extensions import db, jwt, migrate, ma, socketio
 from .routes.routes_address import bp_address
 from .routes.routes_chat import bp_chat
 from .routes.routes_upload import bp_upload
@@ -25,6 +25,7 @@ def create_app():
     jwt.init_app(app)
     ma.init_app(app)
     limiter.init_app(app)
+    socketio.init_app(app)
     # Importação das Rotas (Blueprints)
     # ANTES: from .routes_menu import bp_menu
 

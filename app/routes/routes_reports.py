@@ -3,6 +3,7 @@ from app.models import Order, db
 from app.decorators import admin_required
 from sqlalchemy import func, desc
 from datetime import datetime, timedelta
+from decimal import Decimal
 
 bp_reports = Blueprint('reports', __name__)
 
@@ -46,7 +47,7 @@ def get_dashboard_stats():
     orders = query.order_by(Order.date_created).all()
 
     # 4. Processamento dos Dados (Agregação)
-    total_faturado = sum(o.total_price for o in orders)
+    total_faturado = sum((o.total_price for o in orders), Decimal('0.00'))
     total_pedidos = len(orders)
 
     # Agrupa por dia para o gráfico
@@ -58,15 +59,19 @@ def get_dashboard_stats():
     for order in orders:
         dia_chave = order.date_created.strftime('%d/%m')
         if dia_chave not in dados_grafico:
-            dados_grafico[dia_chave] = 0.0
+            dados_grafico[dia_chave] = Decimal('0.00')
         dados_grafico[dia_chave] += order.total_price
 
+    labels = list(dados_grafico.keys())
+    # Converte os valores Decimal para float para o Chart.js entender
+    data_values = [float(val) for val in dados_grafico.values()]
+
     return jsonify({
-        "total_periodo": total_faturado,
+        "total_periodo": float(total_faturado),  # Converte para float
         "qtd_pedidos": total_pedidos,
         "grafico": {
-            "labels": list(dados_grafico.keys()),
-            "data": list(dados_grafico.values())
+            "labels": labels,
+            "data": data_values
         },
         "periodo_info": f"{start_date.strftime('%d/%m')} até {end_date.strftime('%d/%m')}"
     }), 200

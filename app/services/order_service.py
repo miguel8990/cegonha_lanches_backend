@@ -5,6 +5,7 @@ from sqlalchemy.orm import joinedload
 from datetime import datetime, time
 from sqlalchemy import desc  # <--- FALTAVA ISTO
 from decimal import Decimal # [IMPORTANTE] Importar Decimal
+from ..extensions import socketio # <--- Importe o socketio
 
 
 def create_order_logic(data, user_id=None):
@@ -122,6 +123,9 @@ def create_order_logic(data, user_id=None):
     #     if payment_resp and 'redirect_url' in payment_resp:
     #         result_dump['redirect_url'] = payment_resp['redirect_url']
 
+    print(f"📡 Emitindo evento novo_pedido para ID: {new_order.id}")
+    socketio.emit('novo_pedido', convert_decimals(result_dump))
+
     return result_dump
 
 
@@ -199,6 +203,19 @@ def update_order_status_logic(order_id, new_status):
 
     order.status = new_status
     db.session.commit()
+
+    order_data = orders_schema.dump([order])[0]
+
+    # [NOVO] Emite o evento de atualização
+    print(f"📡 Status do Pedido #{order.id} mudou para {new_status}")
+    payload = {
+        'order_id': order.id,
+        'status': new_status,
+        'user_id': order.user_id,
+        'order_data': order_data
+    }
+    socketio.emit('status_update', convert_decimals(payload))
+
     return orders_schema.dump([order])[0]
 
 
@@ -230,3 +247,14 @@ def soft_delete_order_by_admin_logic(order_id):
 # Mantivemos para compatibilidade, caso algum lugar chame, mas redireciona para o filtro vazio
 def get_all_orders_daily():
     return get_filtered_orders({})
+
+
+# Função auxiliar para limpar Decimals para o SocketIO
+def convert_decimals(obj):
+    if isinstance(obj, list):
+        return [convert_decimals(i) for i in obj]
+    elif isinstance(obj, dict):
+        return {k: convert_decimals(v) for k, v in obj.items()}
+    elif isinstance(obj, Decimal):
+        return float(obj) # Converte Decimal para Float
+    return obj

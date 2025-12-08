@@ -3,6 +3,7 @@ from ..schemas import products_schema, product_schema
 import json
 from marshmallow import ValidationError
 import os
+from ..extensions import socketio
 
 
 def get_all_products(only_available=True):
@@ -82,6 +83,13 @@ def toggle_availability(product_id):
 
     product.is_available = not product.is_available
     db.session.commit()
+
+    # [NOVO] Avisa que o produto mudou
+    print(f"📡 Produto {product.id} agora está {'Disponível' if product.is_available else 'Indisponível'}")
+    socketio.emit('product_toggle', {
+        'id': product.id,
+        'is_available': product.is_available
+    })
 
     return {"id": product.id, "is_available": product.is_available}
 
