@@ -24,6 +24,15 @@ def send_message_logic(user_id, text, is_admin=False):
         raise ValueError("Mensagem vazia.")
     if len(text) > 800:
         raise ValueError("Mensagem muito grande")
+
+    is_first_message = False
+    if not is_admin:
+        # Conta quantas mensagens esse usuário já tem
+        count = ChatMessage.query.filter_by(user_id=user_id).count()
+        if count == 0:
+            is_first_message = True
+
+
     new_msg = ChatMessage(
         user_id=user_id,
         message=text,
@@ -33,6 +42,30 @@ def send_message_logic(user_id, text, is_admin=False):
     db.session.commit()
     if not is_admin:
         _enforce_storage_limit(user_id)
+    if is_first_message:
+        # Busca o nome do usuário para personalizar
+        user = User.query.get(user_id)
+        primeiro_nome = user.name.split()[0] if user and user.name else "Cliente"
+
+        bot_text = (
+            f"Olá, {primeiro_nome}! 👋 Bem-vindo ao chat do Cegonha Lanches.\n"
+            "Recebemos sua mensagem e um atendente irá respondê-lo em breve. "
+            "Enquanto isso, fique à vontade para consultar nosso cardápio!"
+        )
+
+        # Cria a resposta do sistema (como se fosse admin)
+        auto_reply = ChatMessage(
+            user_id=user_id,
+            message=bot_text,
+            is_from_admin=True,  # Importante: aparece como mensagem do restaurante
+            timestamp=datetime.utcnow()  # + alguns milissegundos idealmente, mas o banco ordena
+        )
+        db.session.add(auto_reply)
+        db.session.commit()
+
+
+
+
 
     return chat_message_schema.dump(new_msg)
 
