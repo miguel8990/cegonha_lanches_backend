@@ -10,20 +10,20 @@ bp_payment = Blueprint('payment', __name__)
 # (Escolher forma de pagamento, Pagar Online)
 # ==============================================================================
 
-@bp_payment.route('/process', methods=['POST'])
-@jwt_required()
-def process_payment():
-    """
-    Cliente envia: { "order_id": 1, "payment_method": "card_machine" }
-    """
-    data = request.get_json()
-    user_id = get_jwt_identity()
-
-    try:
-        result = services.payment_service.process_payment_logic(user_id, data)
-        return jsonify(result), 200
-    except ValueError as e:
-        return jsonify({'error': str(e)}), 400
+# @bp_payment.route('/process', methods=['POST'])
+# @jwt_required()
+# def process_payment():
+#     """
+#     Cliente envia: { "order_id": 1, "payment_method": "card_machine" }
+#     """
+#     data = request.get_json()
+#     user_id = get_jwt_identity()
+#
+#     try:
+#         result = services.payment_service.process_payment_logic(user_id, data)
+#         return jsonify(result), 200
+#     except ValueError as e:
+#         return jsonify({'error': str(e)}), 400
 
 
 # ==============================================================================
@@ -31,13 +31,13 @@ def process_payment():
 # (O Mercado Pago chama aqui. NÃO TEM LOGIN, pois é servidor-servidor)
 # ==============================================================================
 
-@bp_payment.route('/webhook/mercadopago', methods=['POST'])
-@admin_required()
-def webhook_mercadopago():
-    data = request.get_json()
-    # Chama o serviço sem bloquear a thread
-    services.payment_service.process_webhook_logic(data)
-    return jsonify({"status": "received"}), 200
+# @bp_payment.route('/webhook/mercadopago', methods=['POST'])
+# @admin_required()
+# def webhook_mercadopago():
+#     data = request.get_json()
+#     # Chama o serviço sem bloquear a thread
+#     services.payment_service.process_webhook_logic(data)
+#     return jsonify({"status": "received"}), 200
 
 
 # ==============================================================================

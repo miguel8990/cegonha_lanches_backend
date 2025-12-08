@@ -111,13 +111,13 @@ def create_order_logic(data, user_id=None):
     # Integração MP
     result_dump = orders_schema.dump([new_order])[0]
 
-    if payment_method_chosen == 'mercadopago':
-        from app.services import payment_service
-        pay_data = {"order_id": new_order.id, "payment_method": "mercadopago"}
-        # Aqui o payment_service pode retornar dict com redirect_url
-        payment_resp = payment_service.process_payment_logic(user_id, pay_data)
-        if payment_resp and 'redirect_url' in payment_resp:
-            result_dump['redirect_url'] = payment_resp['redirect_url']
+    # if payment_method_chosen == 'mercadopago':
+    #     from app.services import payment_service
+    #     pay_data = {"order_id": new_order.id, "payment_method": "mercadopago"}
+    #     # Aqui o payment_service pode retornar dict com redirect_url
+    #     payment_resp = payment_service.process_payment_logic(user_id, pay_data)
+    #     if payment_resp and 'redirect_url' in payment_resp:
+    #         result_dump['redirect_url'] = payment_resp['redirect_url']
 
     return result_dump
 
