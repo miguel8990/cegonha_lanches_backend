@@ -4,6 +4,7 @@ from ..schemas import orders_schema
 from sqlalchemy.orm import joinedload
 from datetime import datetime, time
 from sqlalchemy import desc  # <--- FALTAVA ISTO
+from decimal import Decimal # [IMPORTANTE] Importar Decimal
 
 
 def create_order_logic(data, user_id=None):
@@ -21,7 +22,7 @@ def create_order_logic(data, user_id=None):
 
     # 1.1 Recupera Taxa de Entrega
     neighborhood_name = address_data.get('neighborhood')
-    delivery_fee = 0.0
+    delivery_fee = Decimal('0.00')
 
     if neighborhood_name and neighborhood_name != "-":
         bairro_db = Neighborhood.query.filter_by(name=neighborhood_name).first()
@@ -31,7 +32,7 @@ def create_order_logic(data, user_id=None):
     new_order = Order(
         user_id=user_id,
         status='Recebido',
-        total_price=0.0,
+        total_price=Decimal('0.00'),
         delivery_fee=delivery_fee,
         payment_method=payment_method_chosen,
         payment_status='pending',
@@ -48,13 +49,13 @@ def create_order_logic(data, user_id=None):
 
     # 2. Processamento dos Itens
     items_list = data.get('items', [])
-    total_order_value = 0.0
+    total_order_value = Decimal('0.00')
 
     if not items_list:
         raise ValueError("O pedido deve conter pelo menos um item.")
 
     for item_data in items_list:
-        product = Product.query.get(item_data['product_id'])
+        product = Product.query.with_for_update().get(item_data['product_id'])
         if not product:
             raise ValueError(f"Produto ID {item_data['product_id']} não encontrado.")
 
@@ -90,18 +91,20 @@ def create_order_logic(data, user_id=None):
 
         if coupon.usage_limit and coupon.used_count >= coupon.usage_limit:
             raise ValueError("Cupom esgotado.")
-
+        min_purchase = Decimal(str(coupon.min_purchase))
         # O front já validou o mínimo, mas validamos aqui também (subtraindo o frete para ser justo ou não, depende da regra. Vamos validar no total bruto).
         if total_order_value < coupon.min_purchase:
             raise ValueError(f"Valor mínimo não atingido para o cupom.")
 
-        discount = 0.0
-        if coupon.discount_percent:
-            discount = total_order_value * (coupon.discount_percent / 100)
-        elif coupon.discount_fixed:
-            discount = coupon.discount_fixed
+        discount = Decimal('0.00')
 
-        total_order_value = max(0.0, total_order_value - discount)
+        if coupon.discount_percent:
+            percent = Decimal(str(coupon.discount_percent))
+            discount = total_order_value * (percent / 100)
+        elif coupon.discount_fixed:
+            discount = Decimal(str(coupon.discount_fixed))
+
+        total_order_value = max(Decimal('0.00'), total_order_value - discount)
         coupon.used_count += 1
 
     # 4. Finalização
@@ -180,7 +183,9 @@ def _calculate_item_price(product, customizations):
         disponiveis = details.get(tipo, [])
         for esc in escolhidos:
             match = next((Op for Op in disponiveis if Op['nome'] == esc), None)
-            if match: base_price += match['price']
+            if match:
+                preco_adicional = Decimal(str(match['price']))
+                base_price += preco_adicional
 
     return base_price
 

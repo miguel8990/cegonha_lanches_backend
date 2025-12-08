@@ -9,14 +9,19 @@ import os
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+
 def get_mp_sdk():
     """
-    Recupera o SDK configurado com o Token do ambiente.
+    Recupera o SDK configurado com o Token do ambiente com validação de segurança.
     """
     token = os.getenv('MP_ACCESS_TOKEN')
-    # Validação simples para garantir que o token parece real
-    if not token or len(token) < 10 or token == "SEU_ACCESS_TOKEN_AQUI":
+
+    # [CORREÇÃO 1.2] Validação Robusta do Token
+    # Verifica se existe, tamanho mínimo e se não é o valor placeholder padrão
+    if not token or len(token) < 20 or "SEU_ACCESS_TOKEN" in token:
+        print("⚠️ AVISO: Token do Mercado Pago inválido ou não configurado.")
         return None
+
     return mercadopago.SDK(token)
 
 def create_preference_logic(order):

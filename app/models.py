@@ -2,7 +2,7 @@ from datetime import datetime
 from .extensions import db
 import json
 import bleach
-from sqlalchemy import event
+from sqlalchemy import event, Numeric
 from werkzeug.security import generate_password_hash, check_password_hash
 
 
@@ -60,12 +60,13 @@ class Product(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
     description = db.Column(db.Text)
-    price = db.Column(db.Float, nullable=False)
+    price = db.Column(Numeric(10, 2), nullable=False)
     image_url = db.Column(db.String(200))
     category = db.Column(db.String(50), default='Lanche')
     details_json = db.Column(db.Text, default='{}')
     is_available = db.Column(db.Boolean, default=True)
     stock_quantity = db.Column(db.Integer, nullable=True)
+    is_deleted = db.Column(db.Boolean, default=False)
 
     def get_details(self):
         try:
@@ -80,7 +81,8 @@ class Order(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     date_created = db.Column(db.DateTime, default=datetime.utcnow)
     status = db.Column(db.String(20), default='Recebido')
-    total_price = db.Column(db.Float, default=0.0)
+    total_price = db.Column(Numeric(10, 2), default=0.00)
+    delivery_fee = db.Column(Numeric(10, 2), default=0.00)
 
     # SNAPSHOT DO CLIENTE (Dados fixos da hora da compra)
     customer_name = db.Column(db.String(100))
@@ -107,7 +109,7 @@ class OrderItem(db.Model):
     order_id = db.Column(db.Integer, db.ForeignKey('order.id'), nullable=False)
     product_id = db.Column(db.Integer, db.ForeignKey('product.id'), nullable=False)
     quantity = db.Column(db.Integer, nullable=False)
-    price_at_time = db.Column(db.Float, nullable=False)
+    price_at_time = db.Column(Numeric(10, 2), default=0.00)
     customizations_json = db.Column(db.Text, default='{}')
     product = db.relationship('Product')
 
@@ -130,7 +132,7 @@ class ChatMessage(db.Model):
 class Neighborhood(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False, unique=True)
-    price = db.Column(db.Float, default=0.0)
+    price = db.Column(Numeric(10, 2), default=0.00)
     is_active = db.Column(db.Boolean, default=True)
 
 class StoreSchedule(db.Model):

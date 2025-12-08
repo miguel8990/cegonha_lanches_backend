@@ -1,8 +1,8 @@
-"""Recriando banco
+"""empty message
 
-Revision ID: 9903451f25d2
+Revision ID: 7da3cc09c161
 Revises: 
-Create Date: 2025-12-07 10:07:32.922752
+Create Date: 2025-12-08 11:45:30.913179
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = '9903451f25d2'
+revision = '7da3cc09c161'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -33,7 +33,7 @@ def upgrade():
     op.create_table('neighborhood',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('name', sa.String(length=100), nullable=False),
-    sa.Column('price', sa.Float(), nullable=True),
+    sa.Column('price', sa.Numeric(precision=10, scale=2), nullable=True),
     sa.Column('is_active', sa.Boolean(), nullable=True),
     sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('name')
@@ -42,12 +42,13 @@ def upgrade():
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('name', sa.String(length=100), nullable=False),
     sa.Column('description', sa.Text(), nullable=True),
-    sa.Column('price', sa.Float(), nullable=False),
+    sa.Column('price', sa.Numeric(precision=10, scale=2), nullable=False),
     sa.Column('image_url', sa.String(length=200), nullable=True),
     sa.Column('category', sa.String(length=50), nullable=True),
     sa.Column('details_json', sa.Text(), nullable=True),
     sa.Column('is_available', sa.Boolean(), nullable=True),
     sa.Column('stock_quantity', sa.Integer(), nullable=True),
+    sa.Column('is_deleted', sa.Boolean(), nullable=True),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_table('store_schedule',
@@ -63,7 +64,7 @@ def upgrade():
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('name', sa.String(length=100), nullable=False),
     sa.Column('email', sa.String(length=120), nullable=False),
-    sa.Column('password_hash', sa.String(length=256), nullable=False),
+    sa.Column('password_hash', sa.String(length=256), nullable=True),
     sa.Column('role', sa.String(length=20), nullable=True),
     sa.Column('is_verified', sa.Boolean(), nullable=True),
     sa.Column('whatsapp', sa.String(length=20), nullable=True),
@@ -94,10 +95,10 @@ def upgrade():
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('date_created', sa.DateTime(), nullable=True),
     sa.Column('status', sa.String(length=20), nullable=True),
-    sa.Column('total_price', sa.Float(), nullable=True),
+    sa.Column('total_price', sa.Numeric(precision=10, scale=2), nullable=True),
+    sa.Column('delivery_fee', sa.Float(), nullable=True),
     sa.Column('customer_name', sa.String(length=100), nullable=True),
     sa.Column('customer_phone', sa.String(length=20), nullable=True),
-    sa.Column('delivery_fee', sa.Float(), nullable=True),
     sa.Column('street', sa.String(length=200), nullable=True),
     sa.Column('number', sa.String(length=20), nullable=True),
     sa.Column('neighborhood', sa.String(length=100), nullable=True),
@@ -113,7 +114,7 @@ def upgrade():
     sa.Column('order_id', sa.Integer(), nullable=False),
     sa.Column('product_id', sa.Integer(), nullable=False),
     sa.Column('quantity', sa.Integer(), nullable=False),
-    sa.Column('price_at_time', sa.Float(), nullable=False),
+    sa.Column('price_at_time', sa.Numeric(precision=10, scale=2), nullable=True),
     sa.Column('customizations_json', sa.Text(), nullable=True),
     sa.ForeignKeyConstraint(['order_id'], ['order.id'], ),
     sa.ForeignKeyConstraint(['product_id'], ['product.id'], ),
