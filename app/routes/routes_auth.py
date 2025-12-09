@@ -56,7 +56,7 @@ def register():
     }), 201
 
 @bp_auth.route('/login', methods=['POST'])
-@limiter.limit("10 per minute")
+@limiter.limit("8 per minute")
 def login():
     data = request.get_json()
     user = User.query.filter_by(email=data['email']).first()
@@ -168,7 +168,8 @@ def update_profile():
 # --- ROTA SECRETA (NÍVEL DEUS) ---
 
 @bp_auth.route('/admin/create', methods=['POST'])
-@super_admin_required()  # <--- O segredo está aqui. Só você passa.
+@super_admin_required()
+@limiter.limit("3 per day")# <--- O segredo está aqui. Só você passa.
 def create_restaurant_admin():
     """
     Rota para criar gerentes do restaurante.
@@ -224,7 +225,7 @@ def reset_password_confirm():
 
 
 @bp_auth.route('/admin/dados', methods=['GET'])
-@jwt_required()
+@super_admin_required()
 def pegar_dados_admin():
     user_id = get_jwt_identity()
     user = User.query.get(user_id)

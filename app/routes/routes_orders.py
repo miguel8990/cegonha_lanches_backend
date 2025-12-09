@@ -40,6 +40,7 @@ def get_my_order():
 
 
 @bp_orders.route('/<int:order_id>/status', methods=['GET'])
+@jwt_required()
 def check_order_status(order_id):
     try:
         status_info = services.order_service.get_order_status_logic(order_id)
