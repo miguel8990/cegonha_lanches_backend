@@ -221,8 +221,44 @@ def seed_products():
         )
         db.session.add(new_prod)
 
+    print("🥤 Inserindo Bebidas...")
+    _, _, lista_bebidas = get_common_options()
+
+    for b in lista_bebidas:
+        # Lógica de limpeza melhorada
+        clean_name = b['nome'].lower()
+
+        # 1. Remove termos técnicos primeiro
+        for termo in ["2l", "600ml", "350ml", "lata", "garrafa"]:
+            clean_name = clean_name.replace(termo, "")
+
+        # 2. Remove espaços extras nas pontas e substitui espaços internos por hífen
+        img_name = clean_name.strip().replace(" ", "-")
+
+        # 3. Garante que não ficou hífen duplo ou no final
+        while "--" in img_name:
+            img_name = img_name.replace("--", "-")
+        if img_name.endswith("-"):
+            img_name = img_name[:-1]
+
+        # Caso especial para Coca (opcional)
+        if "coca" in img_name and "cola" not in img_name:
+            img_name = img_name.replace("coca", "coca-cola")
+
+        nova_bebida = Product(
+            name=b['nome'],
+            description="Bebida gelada",
+            price=b['price'],
+            image_url=f"assets/{img_name}.jpg",
+            category="Bebida",
+            is_available=True,
+            details_json=json.dumps({})
+        )
+        db.session.add(nova_bebida)
+    # ---------------------------------------------
+
     db.session.commit()
-    print("✅ Menu populado com sucesso!")
+    print("✅ Menu (Lanches + Bebidas) populado com sucesso!")
 
 
 def seed_schedule():

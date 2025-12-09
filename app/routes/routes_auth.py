@@ -55,6 +55,22 @@ def register():
         'require_verification': True
     }), 201
 
+@bp_auth.route('/login', methods=['POST'])
+@limiter.limit("10 per minute")
+def login():
+    data = request.get_json()
+    user = User.query.filter_by(email=data['email']).first()
+
+    if user and user.verify_password(data['password']):
+        if not user.is_verified:
+            return jsonify({'message': 'Conta não verificada. Cheque seu email.'}), 403
+
+        token = create_token(user.id)
+        # Retorna Token e Objeto User completo
+        return jsonify({'token': token, 'user': user.to_dict()}), 200
+
+    return jsonify({'message': 'Credenciais inválidas'}), 401
+
 
 @bp_auth.route('/confirm-email', methods=['GET'])
 @limiter.limit("5 per day")
@@ -82,32 +98,60 @@ def confirm_email():
         login_token = create_token(user.id)
 
         # Redireciona para o Front com o token na URL (para o JS pegar e logar)
+        # Dentro de confirm_email...
+
+        # [CORREÇÃO] Adicione &id={user.id} aqui também
         return redirect(
-            f"{frontend_url}/index.html?status=verified&token={login_token}&name={user.name}&role={user.role}")
+            f"{frontend_url}/index.html?status=verified&token={login_token}&name={user.name}&role={user.role}&id={user.id}")
 
     except Exception as e:
         print(e)
         return redirect(f"{frontend_url}/index.html?status=error_token")
 
 
-@bp_auth.route('/login', methods=['POST'])
-@limiter.limit("10 per minute")
-def login():
-    data = request.get_json()
-    user = User.query.filter_by(email=data['email']).first()
-
-    if user and user.verify_password(data['password']):
-        if not user.is_verified:
-            return jsonify({'message': 'Conta não verificada. Cheque seu email.'}), 403
-
-        token = create_token(user.id)
-        return jsonify({'token': token, 'user': user.to_dict()}), 200
-
-    return jsonify({'message': 'Credenciais inválidas'}), 401
-
 # app/routes/routes_auth.py
 
-# ... (outras rotas) ...
+@bp_auth.route('/magic-login/request', methods=['POST'])
+@limiter.limit("3 per minute")
+def request_magic_link():
+    data = request.get_json()
+    email = data.get('email')
+    name = data.get('name')
+
+    if not email:
+        return jsonify({'error': 'Email é obrigatório'}), 400
+
+    user = User.query.filter_by(email=email).first()
+
+    # --- CENÁRIO A: Usuário Novo (Auto-Cadastro Mágico) ---
+    if not user:
+        # [CORREÇÃO] Se não enviou nome, criamos um automático baseada no e-mail
+        if not name:
+            # Ex: "maria.silva@email.com" vira "Maria Silva"
+            name = email.split('@')[0].replace('.', ' ').title()
+
+        # Cria o usuário automaticamente (já verificado, pois vai clicar no link do email)
+        user = User(name=name, email=email, is_verified=True)
+        db.session.add(user)
+        db.session.commit()
+
+    # --- CENÁRIO B: Usuário Existente ---
+
+    # Gera token de curta duração (15 min)
+    magic_token = create_access_token(
+        identity=str(user.id),
+        additional_claims={"type": "magic_link_login"},
+        expires_delta=datetime.timedelta(minutes=15)
+    )
+
+    api_url = os.getenv('API_BASE_URL', 'http://localhost:5000')
+    link_url = f"{api_url}/api/auth/magic-login/confirm?token={magic_token}"
+
+    if send_magic_link_email(user.email, user.name, link_url):
+        print(f"📧 Magic Link enviado para {user.email}")
+        return jsonify({'message': 'Link de acesso enviado para seu e-mail!'}), 200
+    else:
+        return jsonify({'error': 'Erro ao enviar e-mail. Tente novamente.'}), 500
 
 @bp_auth.route('/update', methods=['PUT'])
 @jwt_required()
@@ -144,6 +188,7 @@ def create_restaurant_admin():
 
 
 @bp_auth.route('/forgot-password', methods=['POST'])
+@limiter.limit("6 per day")
 def forgot_password():
     data = request.get_json()
     email = data.get('email')
@@ -197,52 +242,13 @@ def pegar_dados_admin():
     return jsonify(dados_secretos), 200
 
 
-@bp_auth.route('/magic-login/request', methods=['POST'])
-@limiter.limit("3 per minute")  # Proteção contra spam
-def request_magic_link():
-    data = request.get_json()
-    email = data.get('email')
-    name = data.get('name')  # Opcional, usado se for criar conta nova
 
-    if not email:
-        return jsonify({'error': 'Email é obrigatório'}), 400
 
-    user = User.query.filter_by(email=email).first()
 
-    # Cenário A: Usuário Novo (Auto-cadastro sem senha)
-    if not user:
-        if not name:
-            return jsonify({'error': 'Para primeiro acesso, informe seu Nome.'}), 400
-
-        user = User(name=name, email=email, is_verified=True)  # Magic Link já verifica o email
-        db.session.add(user)
-        db.session.commit()
-
-    # Cenário B: Usuário Existente (Apenas login)
-
-    # Gera um token de CURTA duração (ex: 15 min) apenas para o link
-    magic_token = create_access_token(
-        identity=str(user.id),
-        additional_claims={"type": "magic_link_login"},
-        expires_delta=datetime.timedelta(minutes=15)
-    )
-
-    # ⚠️ CORREÇÃO DO LINK:
-    # O link tem de apontar para o BACKEND (porta 5000) para validar o token.
-    # Se usarmos o BASE_URL do .env (que costuma ser o front 8000), o link quebra.
-    api_url = os.getenv('API_BASE_URL', 'http://localhost:5000')
-
-    link_url = f"{api_url}/api/auth/magic-login/confirm?token={magic_token}"
-
-    # Envia o e-mail real
-    if send_magic_link_email(user.email, user.name, link_url):
-        print(f"📧 Magic Link enviado para {user.email}")
-        return jsonify({'message': 'Link de acesso enviado para seu e-mail!'}), 200
-    else:
-        return jsonify({'error': 'Erro ao enviar e-mail. Tente novamente.'}), 500
-
+# app/routes/routes_auth.py
 
 @bp_auth.route('/magic-login/confirm', methods=['GET'])
+@limiter.limit("10 per day")
 def confirm_magic_link():
     token = request.args.get('token')
     frontend_url = os.getenv('FRONTEND_URL', 'http://localhost:8000')
@@ -250,7 +256,7 @@ def confirm_magic_link():
     try:
         decoded = decode_token(token)
 
-        # Segurança: Garante que é um token de magic link e não um token antigo qualquer
+        # Segurança: Garante que é um token de magic link
         if decoded.get("type") != "magic_link_login":
             raise Exception("Tipo de token inválido")
 
@@ -260,18 +266,14 @@ def confirm_magic_link():
         if not user:
             return redirect(f"{frontend_url}/index.html?status=error_user")
 
-        # GERA O TOKEN DE SESSÃO REAL (Longa duração: 7 dias)
-        session_token = create_token(user.id)  # Sua função existente em auth_service
+        # GERA O TOKEN DE SESSÃO REAL
+        session_token = create_token(user.id)
 
-        # Redireciona para o Front já logado
+        # [CORREÇÃO] Adicionamos o &id={user.id} no final da URL!
         return redirect(
-            f"{frontend_url}/index.html?status=verified&token={session_token}&name={user.name}&role={user.role}"
+            f"{frontend_url}/index.html?status=verified&token={session_token}&name={user.name}&role={user.role}&id={user.id}"
         )
 
     except Exception as e:
         print(f"Erro Magic Link: {e}")
         return redirect(f"{frontend_url}/index.html?status=error_token")
-
-
-# ... (mantenha os imports e as outras funções: _send_async_email, send_reset_email, etc) ...
-

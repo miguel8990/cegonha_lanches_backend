@@ -29,6 +29,10 @@ def get_lanches():
 def get_combos():
     return jsonify(product_service.get_products_by_category('Combo'))
 
+# [NOVO] Adicione isto aqui:
+@bp_menu.route('/bebidas', methods=['GET'])
+def get_bebidas():
+    return jsonify(product_service.get_products_by_category('Bebida'))
 
 # --- ROTAS PROTEGIDAS (RESTAURANTE/ADMIN) ---
 
