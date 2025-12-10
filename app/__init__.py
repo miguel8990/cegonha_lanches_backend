@@ -36,20 +36,8 @@ def create_app():
     # Adicione aqui:
     # 1. O seu localhost (para testes)
     # 2. O seu link final do GitHub Pages (quando você criar)
-    origins_list = [
-        "https://miguel8990.github.io/cegonha_lanches_frontend/",  # <--- Substitua pelo link real do GitHub
-        "https://www.cegonhalanches.com.br"  # (Opcional) Se usar domínio próprio no futuro
-    ]
-    if os.getenv('FLASK_DEBUG') == '1':
-        print("🔓 Modo Desenvolvimento: Liberando localhost no CORS")
-        origins_list.extend([
-            "http://localhost:8000",
-            "http://127.0.0.1:8000",
-            "http://localhost:5500",  # VS Code Live Server (comum)
-            "http://127.0.0.1:5500"
-        ])
 
-    CORS(app, resources={r"/api/*": {"origins": origins_list}})
+    CORS(app, resources={r"/*": {"origins": "*"}})
     # AGORA: Importamos da pasta routes e do arquivo menu
     from .routes.routes_menu import bp_menu
     from .routes.routes_orders import bp_orders
