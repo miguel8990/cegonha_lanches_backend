@@ -169,7 +169,7 @@ def update_profile():
 
 @bp_auth.route('/admin/create', methods=['POST'])
 @super_admin_required()
-@limiter.limit("3 per day")# <--- O segredo está aqui. Só você passa.
+@limiter.limit("5 per hour")# <--- O segredo está aqui. Só você passa.
 def create_restaurant_admin():
     """
     Rota para criar gerentes do restaurante.
