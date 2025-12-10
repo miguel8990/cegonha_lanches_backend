@@ -9,7 +9,8 @@ from .routes.routes_upload import bp_upload
 from .extensions import db, jwt, migrate, ma, limiter, redis_client
 from .routes.routes_config import bp_config
 
-import os
+
+
 
 
 # Instancia plugins globalmente (ainda sem o app)
@@ -29,18 +30,24 @@ def create_app():
     redis_client.init_app(app)
     # Importação das Rotas (Blueprints)
     # ANTES: from .routes_menu import bp_menu
-
+    import os
     from . import models
     # LISTA DE ORIGENS PERMITIDAS
     # Adicione aqui:
     # 1. O seu localhost (para testes)
     # 2. O seu link final do GitHub Pages (quando você criar)
     origins_list = [
-        "http://localhost:8000",
-        "http://127.0.0.1:8000",
-        "https://miguel8990.github.io",  # <--- Substitua pelo link real do GitHub
+        "https://miguel8990.github.io/cegonha_lanches_frontend/",  # <--- Substitua pelo link real do GitHub
         "https://www.cegonhalanches.com.br"  # (Opcional) Se usar domínio próprio no futuro
     ]
+    if os.getenv('FLASK_DEBUG') == '1':
+        print("🔓 Modo Desenvolvimento: Liberando localhost no CORS")
+        origins_list.extend([
+            "http://localhost:8000",
+            "http://127.0.0.1:8000",
+            "http://localhost:5500",  # VS Code Live Server (comum)
+            "http://127.0.0.1:5500"
+        ])
 
     CORS(app, resources={r"/api/*": {"origins": origins_list}})
     # AGORA: Importamos da pasta routes e do arquivo menu

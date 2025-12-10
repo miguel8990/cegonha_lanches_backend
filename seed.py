@@ -8,7 +8,60 @@ from app.models import StoreSchedule # Adicione o import
 
 app = create_app()
 
+def create_super_admin():
+    """
+    Cria o Super Admin se não existir.
+    """
+    print("📦 Resetando tabela de super_user...")
 
+
+
+
+
+    SUPER_EMAIL = os.getenv("SUPER_ADMIN_EMAIL")
+    SUPER_PASS = os.getenv("SUPER_ADMIN_PASSWORD")
+
+    if not SUPER_EMAIL or not SUPER_PASS:
+        print("❌ ERRO: Variáveis 'SUPER_ADMIN_EMAIL' ou 'SUPER_ADMIN_PASSWORD' ausentes")
+        return
+
+    try:
+        # --- PASSO 1: LIMPEZA TOTAL ---
+        # Busca TODOS os super admins (não apenas o primeiro)
+        existing_supers = User.query.filter_by(role="super_admin").all()
+
+        if existing_supers:
+            count = 0
+            for u in existing_supers:
+                # Opcional: Se quiser preservar o SEU super atual (pelo email), adicione um if aqui.
+                # Mas para garantir unicidade total, melhor apagar tudo e recriar.
+                print(f"   🗑️  Removendo antigo super: {u.email} (ID: {u.id})")
+                db.session.delete(u)
+                count += 1
+
+            db.session.commit()
+            print(f"✅ Limpeza concluída. {count} super admin(s) removido(s).")
+        else:
+            print("ℹ️  Nenhum super admin encontrado para remover.")
+
+        print(f"👤 Criando Super Admin: ...")
+
+        super_admin = User(
+            name="Super Admin Deus",
+            email=SUPER_EMAIL,
+            password_hash=generate_password_hash(SUPER_PASS),
+            role="super_admin",
+            whatsapp="0000000000",
+            is_verified=True
+        )
+
+        db.session.add(super_admin)
+        db.session.commit()
+        print("✅ Super Admin criado!")
+
+    except Exception as e:
+        db.session.rollback()
+        print(f"❌ Erro crítico ao redefinir super admin: {str(e)}")
 
 
 
@@ -245,12 +298,36 @@ def seed_schedule():
     db.session.commit()
     print("✅ Horários criados!")
 
-if __name__ == '__main__':
+
+def seed_database():
+    """
+    Função responsável por criar as tabelas e popular o banco com dados iniciais.
+    """
+
+    # 'with app.app_context()' cria o ambiente necessário para o script acessar
+    # as configurações do banco de dados do Flask.
     with app.app_context():
-        # Cria tabelas se não existirem
+        print("1. Verificando/Criando tabelas...")
+        # CRUCIAL: Este comando cria as tabelas no banco se elas não existirem.
+        # Sem isso, o erro 'relation product does not exist' continuará.
         db.create_all()
 
-        # Popula dados
+        print("2. Verificando se já existem dados...")
+        # === AQUI ESTÁ A VERIFICAÇÃO QUE VOCÊ PEDIU ===
+        # Product.query.first() tenta pegar o primeiro item da tabela.
+        # Se retornar algo (não for None), significa que o banco já tem dados.
+        if Product.query.first():
+            print(">>> O banco de dados JÁ possui produtos. Seed cancelado para evitar duplicatas.")
+            return  # O 'return' encerra a função aqui, nada abaixo será executado.
 
+
+
+        # Adiciona o objeto à sessão (prepara para salvar)
         seed_products()
         seed_schedule()
+        create_super_admin()
+        print(">>> Sucesso! Dados inseridos.")
+
+
+if __name__ == "__main__":
+    seed_database()
