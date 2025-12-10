@@ -56,7 +56,7 @@ def register():
     }), 201
 
 @bp_auth.route('/login', methods=['POST'])
-@limiter.limit("8 per minute")
+@limiter.limit("8 per hour")
 def login():
     data = request.get_json()
     user = User.query.filter_by(email=data['email']).first()
@@ -112,7 +112,7 @@ def confirm_email():
 # app/routes/routes_auth.py
 
 @bp_auth.route('/magic-login/request', methods=['POST'])
-@limiter.limit("3 per minute")
+@limiter.limit("8 per hour")
 def request_magic_link():
     data = request.get_json()
     email = data.get('email')

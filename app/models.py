@@ -44,6 +44,8 @@ class User(db.Model):
             return False  # Usuário sem senha (conta apenas social/magic link)
         return check_password_hash(self.password_hash, password)
 
+
+
 class Address(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
@@ -87,7 +89,7 @@ class Order(db.Model):
     # SNAPSHOT DO CLIENTE (Dados fixos da hora da compra)
     customer_name = db.Column(db.String(100))
     customer_phone = db.Column(db.String(20))
-    delivery_fee = db.Column(db.Float, default=0.0)
+
 
     # O Pedido PRECISA ter endereço próprio (Snapshot)
     # Se você tirar isso, e o cliente mudar o endereço na tabela Address,

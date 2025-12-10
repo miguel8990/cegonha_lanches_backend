@@ -12,7 +12,9 @@ class Config:
     # Banco de Dados
     SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or 'sqlite:///cegonha.db'
     SQLALCHEMY_TRACK_MODIFICATIONS = False
-
+    REDIS_URI = os.environ.get('REDIS_URI')
+    RATELIMIT_STORAGE_URL = REDIS_URI
+    REDIS_URL = REDIS_URI
     # Configuração do JWT (Sistema de Token para Login)
     # Isso define que o token de login expira em 1 dia, por exemplo
     JWT_SECRET_KEY = os.environ.get('JWT_SECRET_KEY') or 'chave-secreta-jwt'

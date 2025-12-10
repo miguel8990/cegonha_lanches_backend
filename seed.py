@@ -9,31 +9,7 @@ from app.models import StoreSchedule # Adicione o import
 app = create_app()
 
 
-def create_super_admin():
-    """
-    Cria o Super Admin se não existir.
-    """
-    SUPER_EMAIL = os.getenv("SUPER_ADMIN_EMAIL", "admin@cegonha.com")
-    SUPER_PASS = os.getenv("SUPER_ADMIN_PASSWORD", "senha_super_secreta")
 
-    if User.query.filter_by(email=SUPER_EMAIL).first():
-        print(f"⚠️  Super Admin '{SUPER_EMAIL}' já existe.")
-        return
-
-    print(f"👤 Criando Super Admin: {SUPER_EMAIL}...")
-
-    super_admin = User(
-        name="Super Admin Deus",
-        email=SUPER_EMAIL,
-        password_hash=generate_password_hash(SUPER_PASS),
-        role="super_admin",
-        whatsapp="0000000000",
-        is_verified=True
-    )
-
-    db.session.add(super_admin)
-    db.session.commit()
-    print("✅ Super Admin criado!")
 
 
 def get_common_options():
@@ -275,6 +251,6 @@ if __name__ == '__main__':
         db.create_all()
 
         # Popula dados
-        create_super_admin()
+
         seed_products()
         seed_schedule()

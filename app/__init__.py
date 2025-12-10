@@ -6,7 +6,7 @@ from .extensions import db, jwt, migrate, ma, socketio
 from .routes.routes_address import bp_address
 from .routes.routes_chat import bp_chat
 from .routes.routes_upload import bp_upload
-from .extensions import db, jwt, migrate, ma, limiter
+from .extensions import db, jwt, migrate, ma, limiter, redis_client
 from .routes.routes_config import bp_config
 
 import os
@@ -26,6 +26,7 @@ def create_app():
     ma.init_app(app)
     limiter.init_app(app)
     socketio.init_app(app)
+    redis_client.init_app(app)
     # Importação das Rotas (Blueprints)
     # ANTES: from .routes_menu import bp_menu
 
