@@ -12,16 +12,7 @@ import os
 import redis
 
 
-redis_url = os.getenv('REDIS_URI')
 
-# Cria a conexão
-try:
-    redis_client = redis.from_url(redis_url)
-    # Testa a conexão rapidinho
-    redis_client.ping()
-    print("✅ Conectado ao Redis com sucesso!")
-except Exception as e:
-    print(f"❌ Falha ao conectar no Redis: {e}")
 
 
 # Instancia plugins globalmente (ainda sem o app)
@@ -37,8 +28,9 @@ def create_app():
     jwt.init_app(app)
     ma.init_app(app)
     limiter.init_app(app)
-    socketio.init_app(app)
-    redis_client.init_app(app)
+
+
+
     # Importação das Rotas (Blueprints)
     # ANTES: from .routes_menu import bp_menu
     import os
@@ -69,8 +61,16 @@ def create_app():
     app.register_blueprint(bp_reports, url_prefix='/api/reports')
     configure_errors(app)
     import os
+    from app.extensions import socketio
     if not os.path.exists(app.config['UPLOAD_FOLDER']):
         os.makedirs(app.config['UPLOAD_FOLDER'])
     app.register_blueprint(bp_upload, url_prefix='/api/upload')
+    redis_url = os.getenv('REDIS_URI')
+
+    socketio.init_app(
+        app,
+        cors_allowed_origins="*",
+        message_queue=redis_url  # <--- CORRETO: Passa a URL para o message_queue
+    )
 
     return app
