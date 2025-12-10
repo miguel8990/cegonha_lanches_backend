@@ -8,9 +8,20 @@ from .routes.routes_chat import bp_chat
 from .routes.routes_upload import bp_upload
 from .extensions import db, jwt, migrate, ma, limiter, redis_client
 from .routes.routes_config import bp_config
+import os
+import redis
 
 
+redis_url = os.getenv('REDIS_URI')
 
+# Cria a conexão
+try:
+    redis_client = redis.from_url(redis_url)
+    # Testa a conexão rapidinho
+    redis_client.ping()
+    print("✅ Conectado ao Redis com sucesso!")
+except Exception as e:
+    print(f"❌ Falha ao conectar no Redis: {e}")
 
 
 # Instancia plugins globalmente (ainda sem o app)
