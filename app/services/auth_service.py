@@ -3,6 +3,7 @@ from ..models import User, db
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_jwt_extended import create_access_token
 import requests
+import os
 
 # --- FUNÇÃO AUXILIAR DE VALIDAÇÃO ---
 def validate_password_strength(password):
@@ -217,10 +218,11 @@ def login_with_google(token):
         raise ValueError("Token do Google inválido ou expirado.")
 
     google_data = response.json()
+    meu_client_id = os.getenv('GOOGLE_CLIENT_ID')
 
     # Verifica se o Audience (Client ID) bate com o seu (Opcional, mas recomendado por segurança)
-    # if google_data['aud'] != os.getenv('GOOGLE_CLIENT_ID'):
-    #    raise ValueError("Token não pertence a este app")
+    if google_data['aud'] != meu_client_id:
+        raise ValueError("Token não pertence a este app")
 
     email = google_data.get('email')
     name = google_data.get('name')

@@ -40,7 +40,10 @@ def create_app():
     # 1. O seu localhost (para testes)
     # 2. O seu link final do GitHub Pages (quando você criar)
 
-    CORS(app, resources={r"/*": {"origins": "*"}})
+    CORS(app, resources={r"/*": {"origins": [
+        "https://miguel8990.github.io",
+        "http://localhost:8000"
+    ]}})
     # AGORA: Importamos da pasta routes e do arquivo menu
     from .routes.routes_menu import bp_menu
     from .routes.routes_orders import bp_orders
