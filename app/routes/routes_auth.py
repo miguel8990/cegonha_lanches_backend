@@ -55,6 +55,7 @@ def register():
         'require_verification': True
     }), 201
 
+
 @bp_auth.route('/login', methods=['POST'])
 @limiter.limit("8 per hour")
 def login():
@@ -66,8 +67,23 @@ def login():
             return jsonify({'message': 'Conta não verificada. Cheque seu email.'}), 403
 
         token = create_token(user.id)
-        # Retorna Token e Objeto User completo
-        return jsonify({'token': token, 'user': user.to_dict()}), 200
+
+        # Define se estamos em ambiente de produção (para setar Secure=True)
+        is_production = os.getenv('FLASK_ENV') == 'production'
+
+        # Preparar os dados do usuário para o JSON de resposta (ver ponto 2)
+
+        response = jsonify({"user": user.to_dict()})  # Usa o dicionário seguro
+
+        response.set_cookie(
+            'token',
+            token,
+            httponly=True,
+            secure=is_production,  # ✅ CORREÇÃO: Condicional!
+            samesite='Lax',
+            max_age=3600 * 24 * 7
+        )
+        return response, 200
 
     return jsonify({'message': 'Credenciais inválidas'}), 401
 
@@ -282,16 +298,46 @@ def confirm_magic_link():
 
 # app/routes/routes_auth.py
 
+# app/routes/routes_auth.py
+
+# app/routes/routes_auth.py
+
 @bp_auth.route('/google', methods=['POST'])
 def google_auth():
     data = request.get_json()
-    token = data.get('credential')  # O Google envia o token no campo 'credential'
+    credential_token = data.get('credential')
+
+    if not credential_token:
+        return jsonify({'message': 'Credencial inválida.'}), 400
 
     try:
-        result = auth_service.login_with_google(token)
-        return jsonify(result), 200
+        # 1. Autentica e recebe o objeto USER do banco de dados
+        user = auth_service.login_with_google(credential_token)
+
+        # 2. Gera o token de sessão (JWT do seu sistema)
+        session_token = create_token(user.id)
+
+        # 3. Prepara os dados do usuário para o Frontend
+        # (Isso garante que 'name', 'email', etc. sejam enviados)
+        user_data = user.to_dict()
+
+        response = jsonify({"user": user_data})
+
+        # 4. Configura o Cookie HttpOnly
+        is_production = os.getenv('FLASK_ENV') == 'production'
+        response.set_cookie(
+            'token',
+            session_token,
+            httponly=True,
+            secure=is_production,
+            samesite='Lax',
+            max_age=3600 * 24 * 7
+        )
+
+        return response, 200
+
     except ValueError as e:
         return jsonify({'message': str(e)}), 400
     except Exception as e:
         print(f"Erro Google Login: {e}")
-        return jsonify({'message': 'Erro interno ao processar login Google'}), 500
+        return jsonify({'message': 'Erro interno no login Google'}), 500

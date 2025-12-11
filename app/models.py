@@ -29,7 +29,7 @@ class User(db.Model):
         return self.role in ['admin', 'super_admin']
 
     def to_dict(self):
-        return {"id": self.id, "name": self.name, "email": self.email, "role": self.role, "is_verified": self.is_verified}
+        return {"id": self.id, "name": self.name, "email": self.email, "role": self.role, "whatsapp":self.whatsapp, "is_verified": self.is_verified}
 
     @property
     def password(self):

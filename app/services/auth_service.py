@@ -206,9 +206,15 @@ def reset_password_with_token(user_id, new_password):
     return True
 
 
+# app/services/auth_service.py
+
+import requests
+import os
+from app.models import User, db
+
 def login_with_google(token):
     """
-    Valida o token do Google e loga/cria o usuário.
+    Valida o token do Google e retorna o objeto User (sem gerar token JWT aqui).
     """
     # 1. Valida o token direto na API do Google
     google_verify_url = f"https://oauth2.googleapis.com/tokeninfo?id_token={token}"
@@ -220,9 +226,10 @@ def login_with_google(token):
     google_data = response.json()
     meu_client_id = os.getenv('GOOGLE_CLIENT_ID')
 
-    # Verifica se o Audience (Client ID) bate com o seu (Opcional, mas recomendado por segurança)
-    if google_data['aud'] != meu_client_id:
-        raise ValueError("Token não pertence a este app")
+    # 2. Segurança: Verifica se o token foi gerado para o SEU site
+    # (Evita que peguem um token válido de outro app e usem no seu)
+    if meu_client_id and google_data['aud'] != meu_client_id:
+        raise ValueError("Token não pertence a este aplicativo.")
 
     email = google_data.get('email')
     name = google_data.get('name')
@@ -230,7 +237,7 @@ def login_with_google(token):
     if not email:
         raise ValueError("Google não forneceu o email.")
 
-    # 2. Verifica se usuário já existe
+    # 3. Verifica se usuário já existe no banco
     user = User.query.filter_by(email=email).first()
 
     if not user:
@@ -245,15 +252,6 @@ def login_with_google(token):
         db.session.add(user)
         db.session.commit()
 
-    # 3. Gera o token de acesso (JWT) do seu sistema
-    access_token = create_access_token(identity=str(user.id))
-
-    return {
-        'token': access_token,
-        'user': {
-            'id': user.id,
-            'name': user.name,
-            'email': user.email,
-            'role': user.role
-        }
-    }
+    # 4. RETORNA O OBJETO USER (A mudança principal é aqui!)
+    # Não geramos mais o 'access_token' aqui dentro. A rota cuida disso.
+    return user

@@ -8,8 +8,8 @@ from .routes.routes_chat import bp_chat
 from .routes.routes_upload import bp_upload
 from .extensions import db, jwt, migrate, ma, limiter, redis_client
 from .routes.routes_config import bp_config
-import os
-import redis
+
+
 
 
 
@@ -25,15 +25,23 @@ def create_app():
     app.config.from_object(Config)
     db.init_app(app)
     migrate.init_app(app, db)
+    import os
     jwt.init_app(app)
     ma.init_app(app)
     limiter.init_app(app)
+    is_production = os.getenv('FLASK_ENV') == 'production'
+    app.config["JWT_TOKEN_LOCATION"] = ["cookies"]
+    app.config["JWT_ACCESS_COOKIE_NAME"] = "token"
+    app.config["JWT_COOKIE_SECURE"] = is_production
+    app.config["JWT_COOKIE_SAMESITE"] = "Lax"
+    app.config["JWT_COOKIE_SECURE"] = True  # Mude para True em Produção (HTTPS)
+    app.config["JWT_COOKIE_CSRF_PROTECT"] = False  # (Simplificação para agora, ideal ativar depois)
 
 
 
     # Importação das Rotas (Blueprints)
     # ANTES: from .routes_menu import bp_menu
-    import os
+
     from . import models
     # LISTA DE ORIGENS PERMITIDAS
     # Adicione aqui:
