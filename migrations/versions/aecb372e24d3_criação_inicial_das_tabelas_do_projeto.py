@@ -1,8 +1,8 @@
-"""empty message
+"""Criação inicial das tabelas do projeto
 
-Revision ID: 7da3cc09c161
+Revision ID: aecb372e24d3
 Revises: 
-Create Date: 2025-12-08 11:45:30.913179
+Create Date: 2025-12-11 15:21:30.529339
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = '7da3cc09c161'
+revision = 'aecb372e24d3'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -96,7 +96,7 @@ def upgrade():
     sa.Column('date_created', sa.DateTime(), nullable=True),
     sa.Column('status', sa.String(length=20), nullable=True),
     sa.Column('total_price', sa.Numeric(precision=10, scale=2), nullable=True),
-    sa.Column('delivery_fee', sa.Float(), nullable=True),
+    sa.Column('delivery_fee', sa.Numeric(precision=10, scale=2), nullable=True),
     sa.Column('customer_name', sa.String(length=100), nullable=True),
     sa.Column('customer_phone', sa.String(length=20), nullable=True),
     sa.Column('street', sa.String(length=200), nullable=True),

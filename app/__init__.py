@@ -32,10 +32,19 @@ def create_app():
     is_production = os.getenv('FLASK_ENV') == 'production'
     app.config["JWT_TOKEN_LOCATION"] = ["cookies"]
     app.config["JWT_ACCESS_COOKIE_NAME"] = "token"
+
+    # Se estiver em produção (Render), Secure=True. Se for localhost, Secure=False.
     app.config["JWT_COOKIE_SECURE"] = is_production
-    app.config["JWT_COOKIE_SAMESITE"] = "Lax"
-    app.config["JWT_COOKIE_SECURE"] = True  # Mude para True em Produção (HTTPS)
-    app.config["JWT_COOKIE_CSRF_PROTECT"] = False  # (Simplificação para agora, ideal ativar depois)
+
+    # Para localhost funcionar bem entre portas diferentes, às vezes "Lax" bloqueia.
+    # Se der erro, tente "None" (mas None exige Secure=True).
+    # Para seu caso (localhost:8000 -> 5000), "Lax" costuma funcionar se não for iframe.
+    app.config["JWT_COOKIE_SAMESITE"] = "None" if is_production else "Lax"
+
+    if is_production:
+        app.config["JWT_COOKIE_SECURE"] = True  # Só força True se for produção
+
+    app.config["JWT_COOKIE_CSRF_PROTECT"] = False
 
 
 
@@ -50,8 +59,9 @@ def create_app():
 
     CORS(app, resources={r"/*": {"origins": [
         "https://miguel8990.github.io",
-        "http://localhost:8000"
-    ]}})
+        "http://localhost:8000",
+        "http://127.0.0.1:8000"  # Importante adicionar o IP local também
+    ]}}, supports_credentials=True)  # <--- ESSENCIAL
     # AGORA: Importamos da pasta routes e do arquivo menu
     from .routes.routes_menu import bp_menu
     from .routes.routes_orders import bp_orders

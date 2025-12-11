@@ -341,3 +341,11 @@ def google_auth():
     except Exception as e:
         print(f"Erro Google Login: {e}")
         return jsonify({'message': 'Erro interno no login Google'}), 500
+
+
+@bp_auth.route('/logout', methods=['POST'])
+def logout():
+    response = jsonify({"msg": "Logout com sucesso"})
+    # Apaga o cookie definindo validade para o passado
+    response.set_cookie('token', '', expires=0)
+    return response
