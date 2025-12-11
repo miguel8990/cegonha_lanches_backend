@@ -278,3 +278,20 @@ def confirm_magic_link():
     except Exception as e:
         print(f"Erro Magic Link: {e}")
         return redirect(f"{frontend_url}/index.html?status=error_token")
+
+
+# app/routes/routes_auth.py
+
+@bp_auth.route('/google', methods=['POST'])
+def google_auth():
+    data = request.get_json()
+    token = data.get('credential')  # O Google envia o token no campo 'credential'
+
+    try:
+        result = auth_service.login_with_google(token)
+        return jsonify(result), 200
+    except ValueError as e:
+        return jsonify({'message': str(e)}), 400
+    except Exception as e:
+        print(f"Erro Google Login: {e}")
+        return jsonify({'message': 'Erro interno ao processar login Google'}), 500

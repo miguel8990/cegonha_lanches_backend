@@ -2,9 +2,7 @@ import re
 from ..models import User, db
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_jwt_extended import create_access_token
-from datetime import timedelta
-from .email_services import send_reset_email
-
+import requests
 
 # --- FUNÇÃO AUXILIAR DE VALIDAÇÃO ---
 def validate_password_strength(password):
@@ -205,3 +203,55 @@ def reset_password_with_token(user_id, new_password):
     user.password_hash = generate_password_hash(new_password)
     db.session.commit()
     return True
+
+
+def login_with_google(token):
+    """
+    Valida o token do Google e loga/cria o usuário.
+    """
+    # 1. Valida o token direto na API do Google
+    google_verify_url = f"https://oauth2.googleapis.com/tokeninfo?id_token={token}"
+    response = requests.get(google_verify_url)
+
+    if response.status_code != 200:
+        raise ValueError("Token do Google inválido ou expirado.")
+
+    google_data = response.json()
+
+    # Verifica se o Audience (Client ID) bate com o seu (Opcional, mas recomendado por segurança)
+    # if google_data['aud'] != os.getenv('GOOGLE_CLIENT_ID'):
+    #    raise ValueError("Token não pertence a este app")
+
+    email = google_data.get('email')
+    name = google_data.get('name')
+
+    if not email:
+        raise ValueError("Google não forneceu o email.")
+
+    # 2. Verifica se usuário já existe
+    user = User.query.filter_by(email=email).first()
+
+    if not user:
+        # Se não existe, CRIA automaticamente
+        user = User(
+            name=name,
+            email=email,
+            password_hash=None,  # Usuário Google não tem senha
+            role='client',
+            is_verified=True  # Email do Google já é verificado
+        )
+        db.session.add(user)
+        db.session.commit()
+
+    # 3. Gera o token de acesso (JWT) do seu sistema
+    access_token = create_access_token(identity=str(user.id))
+
+    return {
+        'token': access_token,
+        'user': {
+            'id': user.id,
+            'name': user.name,
+            'email': user.email,
+            'role': user.role
+        }
+    }
