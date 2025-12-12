@@ -5,8 +5,10 @@ from email.mime.multipart import MIMEMultipart
 from flask import current_app
 import os
 import threading
-import requests
-from flask import url_for
+
+
+# import requests  <-- COMENTADO: Não utilizado
+# from flask import url_for <-- COMENTADO: Não utilizado
 
 
 def _send_async_email(app, msg):
@@ -23,14 +25,17 @@ def _send_async_email(app, msg):
             print(f"❌ Erro ao enviar e-mail: {str(e)}")
 
 
-def send_reset_email(to_email, reset_token):
+def send_reset_email(to_email, link_url):  # <-- MUDANÇA: Recebe link_url, não só o token
     """
     Monta o e-mail de recuperação de senha.
     """
-    # Link que o usuário vai clicar (Frontend)
-    # Supondo que seu front roda na porta 8000
-    frontend_url = os.getenv('FRONTEND_URL', 'http://localhost:8000')
-    reset_link = f"{frontend_url}/reset.html?token={reset_token}"
+    # --- CÓDIGO ANTIGO COMENTADO (Lógica de URL movida para o Service) ---
+    # frontend_url = os.getenv('FRONTEND_URL', 'http://localhost:8000')
+    # reset_link = f"{frontend_url}/reset.html?token={reset_token}"
+    # ---------------------------------------------------------------------
+
+    # Agora usamos o link que veio pronto
+    reset_link = link_url
 
     subject = "Cegonha Lanches - Recuperação de Senha"
 
@@ -55,32 +60,22 @@ def send_reset_email(to_email, reset_token):
     msg['Subject'] = subject
     msg.attach(MIMEText(html_body, 'html'))
 
-    # Pega a instância do app atual para passar para a thread
-    # (Necessário porque o Flask trabalha com contextos)
     app = current_app._get_current_object()
-
-    # Dispara a thread (não bloqueia o retorno da API)
     thread = threading.Thread(target=_send_async_email, args=(app, msg))
     thread.start()
 
 
-# No arquivo app/services/email_services.py
-
-def send_verification_email(user_email, user_name, token):
+def send_verification_email(user_email, user_name, link_url):  # <-- MUDANÇA: Recebe link_url
     """
     Envia o e-mail de verificação usando o servidor SMTP configurado (padronizado).
     """
-    # 1. Definir a URL do Backend (API)
-    # Usa API_BASE_URL se existir, senão assume localhost:5000
-    base_url = os.getenv('API_BASE_URL', 'http://localhost:5000')
-    magic_link = f"{base_url}/api/auth/confirm-email?token={token}"
 
-    # 2. Configurar Remetente e Assunto
-    # Tenta usar o MAIL_DEFAULT_SENDER, se não tiver, usa o MAIL_USERNAME
+
+    magic_link = link_url
+
     sender = os.getenv('MAIL_DEFAULT_SENDER', os.getenv('MAIL_USERNAME'))
     subject = "Confirme seu cadastro - Cegonha Lanches"
 
-    # 3. Montar o Corpo do E-mail
     html_body = f"""
         <html>
         <body>
@@ -95,33 +90,26 @@ def send_verification_email(user_email, user_name, token):
         </html>
     """
 
-    # 4. Criar o objeto MIME (Necessário para o smtplib)
     msg = MIMEMultipart()
     msg['From'] = sender
     msg['To'] = user_email
     msg['Subject'] = subject
     msg.attach(MIMEText(html_body, 'html'))
 
-    # 5. Enviar usando a função assíncrona existente (_send_async_email)
     try:
-        # Captura o app atual para passar para a thread (contexto do Flask)
         app = current_app._get_current_object()
-
-        # Cria e inicia a thread usando a função que você já tem
         thread = threading.Thread(target=_send_async_email, args=(app, msg))
         thread.start()
-
         return True
     except Exception as e:
         print(f"❌ Erro ao preparar envio de email: {str(e)}")
         return False
 
 
-# ... (mantenha os imports e as outras funções: _send_async_email, send_reset_email, etc) ...
-
 def send_magic_link_email(to_email, user_name, link_url):
     """
     Envia o Magic Link para login sem senha.
+    (Esta função já estava correta, recebendo link_url)
     """
     subject = "Seu Link Mágico de Acesso ✨ - Cegonha Lanches"
     sender = os.getenv('MAIL_DEFAULT_SENDER', os.getenv('MAIL_USERNAME'))

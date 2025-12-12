@@ -1,18 +1,13 @@
-from flask import Blueprint, jsonify, request, redirect
+from flask import Blueprint, jsonify, request, redirect, make_response
 from app.services import auth_service
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from app.decorators import super_admin_required  # Importe o novo decorator
 from app.extensions import limiter
-from flask_jwt_extended import get_jwt
+from flask_jwt_extended import get_jwt, set_access_cookies
 from app.models import User, db
-from app.services.auth_service import create_token
-from app.services.email_services import send_verification_email
-from flask_jwt_extended import create_access_token, decode_token
-import datetime
+
+
 import os
-from app.services.email_services import send_verification_email, send_magic_link_email # <--- Adicione isto
-
-
 
 
 bp_auth = Blueprint('auth', __name__)
@@ -25,149 +20,85 @@ bp_auth = Blueprint('auth', __name__)
 def register():
     data = request.get_json()
 
-    if User.query.filter_by(email=data['email']).first():
-        return jsonify({'message': 'Email já cadastrado'}), 400
+    # registro = register_user(data) <-- ANTIGO (chamava direto a função local ou importada incorretamente)
+    registro = auth_service.register_user(data)  # NOVO: Chama do serviço
 
     # Cria usuário, mas NÃO verificado
-    user = User(
-        name=data['name'],
-        email=data['email'],
-        password=data['password'],  # O modelo deve fazer hash
-        whatsapp=data.get('whatsapp'),
-        is_verified=False
-    )
-
-    db.session.add(user)
-    db.session.commit()
-
-    # Gera token específico para verificação (expira em 24h)
-    verification_token = create_access_token(
-        identity=str(user.id),  # ✅ CORREÇÃO: Convertido para String
-        additional_claims={"type": "email_verification"},
-        expires_delta=datetime.timedelta(hours=24)
-    )
-
-    # Envia email
-    send_verification_email(user.email, user.name, verification_token)
-
-    return jsonify({
-        'message': 'Cadastro realizado! Verifique seu email para ativar a conta.',
-        'require_verification': True
-    }), 201
+    if registro['sucesso']:
+        return jsonify(registro), 201
+    else:
+        msg_erro = registro.get('erro', 'Erro desconhecido')
+        return jsonify({"error": msg_erro}), 400
 
 
 @bp_auth.route('/login', methods=['POST'])
 @limiter.limit("8 per hour")
 def login():
     data = request.get_json()
-    user = User.query.filter_by(email=data['email']).first()
 
-    if user and user.verify_password(data['password']):
-        if not user.is_verified:
-            return jsonify({'message': 'Conta não verificada. Cheque seu email.'}), 403
+    # resultado = login_user(data) <-- ANTIGO
+    resultado = auth_service.login_user(data)  # NOVO
 
-        token = create_token(user.id)
+    if not resultado.get('sucesso'):
+        return jsonify(resultado), 401
 
-        # Define se estamos em ambiente de produção (para setar Secure=True)
-        is_production = os.getenv('FLASK_ENV') == 'production'
+    # 2. Gera o token
+    # access_token = create_token(resultado["user"]["id"]) <-- ANTIGO (acessava ID como int)
 
-        # Preparar os dados do usuário para o JSON de resposta (ver ponto 2)
+    # NOVO: Garante que é string e usa função do service se quiser, ou local.
+    # Como auth_service tem create_token, usamos ela.
+    access_token = auth_service.create_token(resultado["user"]["id"])
 
-        response = jsonify({"user": user.to_dict()})  # Usa o dicionário seguro
+    # 3. Cria a resposta JSON (SÓ com os dados do usuário, SEM o token visível)
+    resp = jsonify({
+        "user": resultado['user'],  # O service já devolve o objeto serializavel ou dict
+        "message": "Login realizado com sucesso"
+    })
 
-        response.set_cookie(
-            'token',
-            token,
-            httponly=True,
-            secure=is_production,  # ✅ CORREÇÃO: Condicional!
-            samesite='Lax',
-            max_age=3600 * 24 * 7
-        )
-        return response, 200
+    # 4. A Mágica: Coloca o token no Cookie seguro
+    set_access_cookies(resp, access_token)
 
-    return jsonify({'message': 'Credenciais inválidas'}), 401
+    return resp, 200
 
 
 @bp_auth.route('/confirm-email', methods=['GET'])
-@limiter.limit("5 per day")
+@limiter.limit("5 per hour")
 def confirm_email():
     token = request.args.get('token')
     frontend_url = os.getenv('FRONTEND_URL', 'http://localhost:8000')
 
-    try:
-        # Decodifica o token
-        decoded = decode_token(token)
+    # resultado = confirmar_email(token) <-- ANTIGO
+    resultado = auth_service.confirmar_email(token)  # NOVO
 
-        if decoded.get("type") != "email_verification":
-            raise Exception("Token inválido")
+    if resultado["sucesso"]:
+        dest_url = f"{frontend_url}/index.html?status=verified&name={resultado['name']}&role={resultado['role']}&id={resultado['id']}"
+        resp = make_response(redirect(dest_url))
 
-        user_id = decoded["sub"]
-        user = User.query.get(user_id)
-
-        if not user:
-            return redirect(f"{frontend_url}/index.html?status=error_user")
-
-        user.is_verified = True
-        db.session.commit()
-
-        # Gera token de login real para o usuário já entrar logado
-        login_token = create_token(user.id)
-
-        # Redireciona para o Front com o token na URL (para o JS pegar e logar)
-        # Dentro de confirm_email...
-
-        # [CORREÇÃO] Adicione &id={user.id} aqui também
-        return redirect(
-            f"{frontend_url}/index.html?status=verified&token={login_token}&name={user.name}&role={user.role}&id={user.id}")
-
-    except Exception as e:
-        print(e)
+        set_access_cookies(resp, resultado['token'])
+        return resp  # Adicionado return resp que faltava no original para efetivar o cookie
+    else:
         return redirect(f"{frontend_url}/index.html?status=error_token")
 
 
 # app/routes/routes_auth.py
 
-@bp_auth.route('/magic-login/request', methods=['POST'])
+@bp_auth.route('/magic-login/request', methods=['POST', 'OPTIONS'])
 @limiter.limit("8 per hour")
 def request_magic_link():
+    if request.method == 'OPTIONS':
+        return jsonify({'status': 'ok'}), 200
+
     data = request.get_json()
-    email = data.get('email')
-    name = data.get('name')
 
-    if not email:
-        return jsonify({'error': 'Email é obrigatório'}), 400
 
-    user = User.query.filter_by(email=email).first()
+    # --- NOVO CÓDIGO (Chamando o Service) ---
+    resultado = auth_service.magic_link(data)
 
-    # --- CENÁRIO A: Usuário Novo (Auto-Cadastro Mágico) ---
-    if not user:
-        # [CORREÇÃO] Se não enviou nome, criamos um automático baseada no e-mail
-        if not name:
-            # Ex: "maria.silva@email.com" vira "Maria Silva"
-            name = email.split('@')[0].replace('.', ' ').title()
-
-        # Cria o usuário automaticamente (já verificado, pois vai clicar no link do email)
-        user = User(name=name, email=email, is_verified=True)
-        db.session.add(user)
-        db.session.commit()
-
-    # --- CENÁRIO B: Usuário Existente ---
-
-    # Gera token de curta duração (15 min)
-    magic_token = create_access_token(
-        identity=str(user.id),
-        additional_claims={"type": "magic_link_login"},
-        expires_delta=datetime.timedelta(minutes=15)
-    )
-
-    api_url = os.getenv('API_BASE_URL', 'http://localhost:5000')
-    link_url = f"{api_url}/api/auth/magic-login/confirm?token={magic_token}"
-
-    if send_magic_link_email(user.email, user.name, link_url):
-        print(f"📧 Magic Link enviado para {user.email}")
-        return jsonify({'message': 'Link de acesso enviado para seu e-mail!'}), 200
+    if resultado['sucesso']:
+        return jsonify({'message': resultado['mensagem']}), 200
     else:
-        return jsonify({'error': 'Erro ao enviar e-mail. Tente novamente.'}), 500
+        return jsonify({'error': resultado['erro']}), 400
+
 
 @bp_auth.route('/update', methods=['PUT'])
 @jwt_required()
@@ -181,11 +112,12 @@ def update_profile():
     except ValueError as e:
         return jsonify({'error': str(e)}), 400
 
+
 # --- ROTA SECRETA (NÍVEL DEUS) ---
 
 @bp_auth.route('/admin/create', methods=['POST'])
 @super_admin_required()
-@limiter.limit("5 per hour")# <--- O segredo está aqui. Só você passa.
+@limiter.limit("5 per hour")  # <--- O segredo está aqui. Só você passa.
 def create_restaurant_admin():
     """
     Rota para criar gerentes do restaurante.
@@ -259,9 +191,6 @@ def pegar_dados_admin():
     return jsonify(dados_secretos), 200
 
 
-
-
-
 # app/routes/routes_auth.py
 
 @bp_auth.route('/magic-login/confirm', methods=['GET'])
@@ -270,29 +199,19 @@ def confirm_magic_link():
     token = request.args.get('token')
     frontend_url = os.getenv('FRONTEND_URL', 'http://localhost:8000')
 
-    try:
-        decoded = decode_token(token)
 
-        # Segurança: Garante que é um token de magic link
-        if decoded.get("type") != "magic_link_login":
-            raise Exception("Tipo de token inválido")
+    # --- NOVO CÓDIGO (Usando o Service) ---
+    # Usamos confirmar_email do service porque você atualizou ele para aceitar magic_link_login também!
+    resultado = auth_service.confirmar_email(token)
 
-        user_id = decoded["sub"]
-        user = User.query.get(user_id)
+    if resultado["sucesso"]:
+        dest_url = f"{frontend_url}/index.html?status=verified&name={resultado['name']}&role={resultado['role']}&id={resultado['id']}"
+        resp = make_response(redirect(dest_url))
 
-        if not user:
-            return redirect(f"{frontend_url}/index.html?status=error_user")
-
-        # GERA O TOKEN DE SESSÃO REAL
-        session_token = create_token(user.id)
-
-        # [CORREÇÃO] Adicionamos o &id={user.id} no final da URL!
-        return redirect(
-            f"{frontend_url}/index.html?status=verified&token={session_token}&name={user.name}&role={user.role}&id={user.id}"
-        )
-
-    except Exception as e:
-        print(f"Erro Magic Link: {e}")
+        # Agora o Cookie é setado corretamente (antes estava apenas na URL)
+        set_access_cookies(resp, resultado['token'])
+        return resp
+    else:
         return redirect(f"{frontend_url}/index.html?status=error_token")
 
 
@@ -315,7 +234,8 @@ def google_auth():
         user = auth_service.login_with_google(credential_token)
 
         # 2. Gera o token de sessão (JWT do seu sistema)
-        session_token = create_token(user.id)
+        # session_token = create_token(user.id) <-- ANTIGO
+        session_token = auth_service.create_token(user.id)  # NOVO: usando do service
 
         # 3. Prepara os dados do usuário para o Frontend
         # (Isso garante que 'name', 'email', etc. sejam enviados)

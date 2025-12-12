@@ -1,9 +1,12 @@
 import re
-from ..models import User, db
 from werkzeug.security import generate_password_hash, check_password_hash
-from flask_jwt_extended import create_access_token
-import requests
+import datetime
 import os
+
+from app.models import User, db
+from flask_jwt_extended import create_access_token, decode_token
+from app.services.email_services import send_verification_email, send_magic_link_email, send_reset_email
+
 
 # --- FUNÇÃO AUXILIAR DE VALIDAÇÃO ---
 def validate_password_strength(password):
@@ -32,6 +35,7 @@ def validate_password_strength(password):
 
     return True, None
 
+
 def create_token(user_id):
     """
     Gera um token de acesso padrão para o usuário.
@@ -39,34 +43,63 @@ def create_token(user_id):
     """
     return create_access_token(identity=str(user_id))
 
-def register_user(name, email, password, whatsapp=None, street=None, number=None, neighborhood=None, complement=None):
+
+def register_user(dados):
     """
     Registro Público (App do Cliente).
     Sempre cria com role='client'.
     """
+    nome = dados.get('name')
+    email = dados.get('email')
+    senha = dados.get('password')
+    whatsapp = dados.get('whatsapp')
+
+    if not nome or not email or not senha:
+        return {"sucesso": False, "erro": "Todos os campos obrigatórios devem ser preenchidos."}
+
     # 1. Validação de Email Duplicado
     if User.query.filter_by(email=email).first():
-        raise ValueError("Este email já está cadastrado.")
+        return {"sucesso": False, "erro": "Este email já está cadastrado."}
 
     # 2. [NOVO] Validação de Força de Senha
-    is_valid, error_msg = validate_password_strength(password)
+    is_valid, error_msg = validate_password_strength(senha)
     if not is_valid:
-        raise ValueError(error_msg)
+        return {"sucesso": False, "erro": error_msg}
 
-    hashed_password = generate_password_hash(password)
+    hashed_password = generate_password_hash(senha)
 
     new_user = User(
-        name=name,
+        name=nome,
         email=email,
         password_hash=hashed_password,
         role='client',  # Força nível baixo
         whatsapp=whatsapp
     )
+    try:
+        db.session.add(new_user)
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        return {"sucesso": False, "erro": f"Erro no banco de dados: {str(e)}"}
 
-    db.session.add(new_user)
-    db.session.commit()
+    # Gera token para email_verification (24h de validade)
+    verification_token = create_access_token(
+        identity=str(new_user.id),
+        additional_claims={"type": "email_verification"},
+        expires_delta=datetime.timedelta(hours=24)
+    )
 
-    return new_user
+    api_url = os.getenv('API_BASE_URL', 'http://localhost:5000')
+    link_completo = f"{api_url}/api/auth/confirm-email?token={verification_token}"
+
+    # Chama passando o LINK, não só o token
+    send_verification_email(email, nome, link_completo)
+
+    return {
+        "sucesso": True,
+        "id": new_user.id,
+        "mensagem": "Usuário cadastrado com sucesso, verifique seu email para confirmação!"
+    }
 
 
 def create_admin_by_super(actor_id, data):
@@ -97,21 +130,23 @@ def create_admin_by_super(actor_id, data):
     return new_admin
 
 
-def login_user(email, password):
-    user = User.query.filter_by(email=email).first()
+def login_user(data):
+    email = data.get('email')
+    senha = data.get('password')
+    usuario = User.query.filter_by(email=email).first()
 
-    if user and check_password_hash(user.password_hash, password):
-        access_token = create_access_token(identity=str(user.id))
-        return {
-            'token': access_token,
-            'user': {
-                'id': user.id,
-                'name': user.name,
-                'email': user.email,
-                'role': user.role
-            }
-        }
-    return None
+    if not usuario or not check_password_hash(usuario.password_hash, senha):
+        return {"sucesso": False, "message": "Email ou senha incorretos"}
+    return {
+        "sucesso": True,
+        "user": {
+            "id": usuario.id,
+            "name": usuario.name,
+            "email": usuario.email,
+            "role": usuario.role
+        },
+        "message": "Login realizado com sucesso"
+    }
 
 
 def update_user_info(user_id, data):
@@ -157,12 +192,6 @@ def update_user_info(user_id, data):
     }
 
 
-# app/services/auth_service.py
-from datetime import timedelta
-# ... importações existentes ...
-from .email_services import send_reset_email  # Importe o novo serviço
-
-
 def request_password_reset(email):
     """
     1. Verifica se e-mail existe.
@@ -171,20 +200,23 @@ def request_password_reset(email):
     """
     user = User.query.filter_by(email=email).first()
     if not user:
-        # Por segurança, não dizemos se o e-mail existe ou não,
-        # apenas retornamos sucesso falso ou True genérico.
-        # Mas para simplificar aqui, vamos retornar False.
+        # Por segurança, não dizemos se o e-mail existe ou não
         return False
 
     # Gera um token JWT específico para reset, expirando em 30min
     reset_token = create_access_token(
         identity=str(user.id),
-        expires_delta=timedelta(minutes=30),
-        additional_claims={"type": "password_reset"}  # Marca d'água para saber que é reset
+        expires_delta=datetime.timedelta(minutes=30),
+        additional_claims={"type": "password_reset"}
     )
 
     # Chama o serviço de e-mail
-    send_reset_email(user.email, reset_token)
+    # --- NOVO: MONTA O LINK AQUI ---
+    frontend_url = os.getenv('FRONTEND_URL', 'http://localhost:8000')
+    link_reset = f"{frontend_url}/reset.html?token={reset_token}"
+
+    # Chama passando o LINK
+    send_reset_email(user.email, link_reset)
     return True
 
 
@@ -206,16 +238,12 @@ def reset_password_with_token(user_id, new_password):
     return True
 
 
-# app/services/auth_service.py
-
-import requests
-import os
-from app.models import User, db
-
 def login_with_google(token):
     """
-    Valida o token do Google e retorna o objeto User (sem gerar token JWT aqui).
+    Valida o token do Google e retorna o objeto User.
     """
+    import requests  # Import aqui ou no topo
+
     # 1. Valida o token direto na API do Google
     google_verify_url = f"https://oauth2.googleapis.com/tokeninfo?id_token={token}"
     response = requests.get(google_verify_url)
@@ -227,7 +255,6 @@ def login_with_google(token):
     meu_client_id = os.getenv('GOOGLE_CLIENT_ID')
 
     # 2. Segurança: Verifica se o token foi gerado para o SEU site
-    # (Evita que peguem um token válido de outro app e usem no seu)
     if meu_client_id and google_data['aud'] != meu_client_id:
         raise ValueError("Token não pertence a este aplicativo.")
 
@@ -252,6 +279,100 @@ def login_with_google(token):
         db.session.add(user)
         db.session.commit()
 
-    # 4. RETORNA O OBJETO USER (A mudança principal é aqui!)
-    # Não geramos mais o 'access_token' aqui dentro. A rota cuida disso.
     return user
+
+
+def confirmar_email(token):
+    try:
+        # Decodifica o token
+        decoded = decode_token(token)
+
+        # Se o token não for de email_verification nem magic_link_login, rejeita
+        # (Adaptei aqui para aceitar os dois tipos, já que você tem os dois fluxos)
+        tipo = decoded.get("type")
+        if tipo not in ["email_verification", "magic_link_login"]:
+            return {"sucesso": False, "erro": "Tipo de token inválido"}
+
+        user_id = decoded["sub"]
+        user = User.query.get(user_id)
+
+        if not user:
+            return {"sucesso": False, "erro": "Usuário não encontrado"}
+
+        name = user.name
+        role = user.role
+
+        # Garante que está verificado
+        if not user.is_verified:
+            user.is_verified = True
+            db.session.commit()
+
+        # Gera token de login real para o usuário já entrar logado
+        # (Nota: login_token é o token de sessão que vai pro cookie)
+        login_token = create_token(user.id)
+
+        resposta = {
+            "name": name,
+            "role": role,
+            "id": user_id,
+            "token": login_token,
+            "sucesso": True
+        }
+        return resposta
+    except Exception as e:
+        # Captura token expirado ou inválido sem travar o servidor
+        return {"sucesso": False, "erro": str(e)}
+
+
+def magic_link(data):
+    """
+    Solicitação de Magic Link (Login sem senha).
+    Refatorado para retornar Dicionário em vez de JSON Response.
+    """
+    email = data.get('email')
+    name = data.get('name')
+
+    if not email:
+        # return jsonify({'error': 'Email é obrigatório'}), 400  <-- COMENTADO (Errado no Service)
+        return {"sucesso": False, "erro": "Email é obrigatório"}  # <-- NOVO (Certo no Service)
+
+    user = User.query.filter_by(email=email).first()
+
+    # --- CENÁRIO A: Usuário Novo (Auto-Cadastro Mágico) ---
+    if not user:
+        if not name:
+            name = email.split('@')[0].replace('.', ' ').title()
+
+        # Cria o usuário automaticamente
+        user = User(name=name, email=email, is_verified=True, role='client')
+        db.session.add(user)
+        try:
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            return {"sucesso": False, "erro": "Erro ao criar usuário."}
+
+    # --- CENÁRIO B: Usuário Existente ---
+
+    # Gera token de curta duração (15 min) para o link
+    magic_token = create_access_token(
+        identity=str(user.id),
+        additional_claims={"type": "magic_link_login"},
+        expires_delta=datetime.timedelta(minutes=15)
+    )
+
+    api_url = os.getenv('API_BASE_URL', 'http://localhost:5000')
+    # O link deve apontar para a rota de CONFIRMAÇÃO
+    # Como você tem a rota /confirm-email que usa a função confirmar_email,
+    # podemos apontar para lá se ela aceitar o tipo "magic_link_login" (ajustei acima).
+    # OU apontar para /magic-login/confirm se você mantiver essa rota.
+    # Vou apontar para magic-login/confirm para manter compatibilidade com sua rota existente.
+    link_url = f"{api_url}/api/auth/magic-login/confirm?token={magic_token}"
+
+    if send_magic_link_email(user.email, user.name, link_url):
+        print(f"📧 Magic Link enviado para {user.email}")
+        # return jsonify({'message': 'Link de acesso enviado para seu e-mail!'}), 200 <-- COMENTADO
+        return {"sucesso": True, "mensagem": "Link enviado para seu e-mail."}  # <-- NOVO
+    else:
+        # return jsonify({'error': 'Erro ao enviar e-mail. Tente novamente.'}), 500 <-- COMENTADO
+        return {"sucesso": False, "erro": "Erro ao enviar e-mail."}  # <-- NOVO
