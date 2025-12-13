@@ -71,7 +71,7 @@ def confirm_email():
     resultado = auth_service.confirmar_email(token)  # NOVO
 
     if resultado["sucesso"]:
-        dest_url = f"{frontend_url}/index.html?status=verified&name={resultado['name']}&role={resultado['role']}&id={resultado['id']}"
+        dest_url = f"{frontend_url}/index.html?status=verified&name={resultado['name']}&role={resultado['role']}&id={resultado['id']}&whatsapp={resultado['whatsapp']}"
         resp = make_response(redirect(dest_url))
 
         set_access_cookies(resp, resultado['token'])
@@ -205,7 +205,7 @@ def confirm_magic_link():
     resultado = auth_service.confirmar_email(token)
 
     if resultado["sucesso"]:
-        dest_url = f"{frontend_url}/index.html?status=verified&name={resultado['name']}&role={resultado['role']}&id={resultado['id']}"
+        dest_url = f"{frontend_url}/index.html?status=verified&name={resultado['name']}&role={resultado['role']}&id={resultado['id']}&whatsapp={resultado['whatsapp']}"
         resp = make_response(redirect(dest_url))
 
         # Agora o Cookie é setado corretamente (antes estava apenas na URL)
@@ -222,6 +222,7 @@ def confirm_magic_link():
 # app/routes/routes_auth.py
 
 @bp_auth.route('/google', methods=['POST'])
+@limiter.limit("8 per hour")
 def google_auth():
     data = request.get_json()
     credential_token = data.get('credential')

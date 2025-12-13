@@ -2,6 +2,7 @@ import re
 from werkzeug.security import generate_password_hash, check_password_hash
 import datetime
 import os
+import bleach
 
 from app.models import User, db
 from flask_jwt_extended import create_access_token, decode_token
@@ -49,10 +50,31 @@ def register_user(dados):
     Registro Público (App do Cliente).
     Sempre cria com role='client'.
     """
-    nome = dados.get('name')
-    email = dados.get('email')
+    raw_nome = dados.get('name', '')
+    raw_email = dados.get('email', '')
+    nome = bleach.clean(raw_nome, tags=[], strip=True).strip()
+    email = bleach.clean(raw_email, tags=[], strip=True).strip().lower()
     senha = dados.get('password')
-    whatsapp = dados.get('whatsapp')
+    whatsapp = dados.get('whatsapp') or ''
+
+    raw_whatsapp = dados.get('whatsapp') or ''
+    if len(whatsapp) > 20:
+        return {"sucesso": False, "erro": "Número de WhatsApp inválido ou muito longo."}
+        # Remove tudo que não for dígito do whatsapp para salvar apenas números
+    else:
+        whatsapp = ''.join(char for char in str(raw_whatsapp) if char.isdigit())
+        if len(whatsapp) not in [10, 11]:
+            return {
+                "sucesso": False,
+                "erro": f"WhatsApp inválido. O número deve ter 10 ou 11 dígitos (DDD + Número). Você enviou {len(whatsapp)}."
+            }
+    if len(email) > 255:
+        return {"sucesso": False, "erro": "e-mail inválido ou muito longo."}
+    if len(nome) > 150:
+        return {"sucesso": False, "erro": "Nome muito longo."}
+    if len(senha) > 140:
+        return {"sucesso": False, "erro": "Senha muito longa."}
+
 
     if not nome or not email or not senha:
         return {"sucesso": False, "erro": "Todos os campos obrigatórios devem ser preenchidos."}
@@ -106,14 +128,22 @@ def create_admin_by_super(actor_id, data):
     """
     Cria um Admin de Restaurante (Nível 1).
     """
+    super_email = os.getenv("SUPER_ADMIN_EMAIL")
+
     if User.query.filter_by(email=data['email']).first():
         raise ValueError("Email já cadastrado.")
+
+    if actor_id != super_email:
+        raise ValueError("Erro nas credenciais")
+
+
 
     # [NOVO] Validação de Força de Senha
     password = data['password']
     is_valid, error_msg = validate_password_strength(password)
     if not is_valid:
         raise ValueError(error_msg)
+
 
     hashed_password = generate_password_hash(password)
 
@@ -143,7 +173,8 @@ def login_user(data):
             "id": usuario.id,
             "name": usuario.name,
             "email": usuario.email,
-            "role": usuario.role
+            "role": usuario.role,
+            "whatsapp": usuario.whatsapp or ""
         },
         "message": "Login realizado com sucesso"
     }
@@ -316,6 +347,7 @@ def confirmar_email(token):
             "role": role,
             "id": user_id,
             "token": login_token,
+            "whatsapp": user.whatsapp or "",
             "sucesso": True
         }
         return resposta

@@ -4,6 +4,7 @@ from app.models import Neighborhood, db
 from app.schemas import neighborhoods_schema, neighborhood_schema
 from app.decorators import admin_required
 from flask_jwt_extended import jwt_required, get_jwt_identity
+from ..services import delivery_service
 
 bp_delivery = Blueprint('delivery', __name__)
 
@@ -29,41 +30,48 @@ def get_all_neighborhoods():
 @admin_required()
 def add_neighborhood():
     data = request.get_json()
-
-    # Verifica duplicidade
-    if Neighborhood.query.filter_by(name=data['name']).first():
-        return jsonify({'error': 'Bairro já cadastrado'}), 400
-
-    new_bairro = Neighborhood(
-        name=data['name'],
-        price=float(data['price']),
-        is_active=True
-    )
-    db.session.add(new_bairro)
-    db.session.commit()
-    return jsonify(neighborhood_schema.dump(new_bairro)), 201
+    try:
+        new_bairro = delivery_service.adicionar_bairro(data)
+        return jsonify(neighborhood_schema.dump(new_bairro)), 201
+    except ValueError as e:
+        return jsonify({"erro": str(e)}), 400
+    except Exception as e:
+        # ERRO INESPERADO (Crash)
+        return jsonify({"erro": "Erro interno do servidor"}), 500
 
 
 @bp_delivery.route('/<int:id>', methods=['PUT'])
 @admin_required()
 def update_neighborhood(id):
-    bairro = Neighborhood.query.get(id)
-    if not bairro: return jsonify({'error': 'Não encontrado'}), 404
-
     data = request.get_json()
-    if 'name' in data: bairro.name = data['name']
-    if 'price' in data: bairro.price = float(data['price'])
-    if 'is_active' in data: bairro.is_active = data['is_active']
 
-    db.session.commit()
-    return jsonify(neighborhood_schema.dump(bairro)), 200
+    try:
+        # Chama a lógica no service
+        bairro_atualizado = delivery_service.atualizar_bairro_logic(id, data)
+        return jsonify(neighborhood_schema.dump(bairro_atualizado)), 200
+
+    except ValueError as e:
+        msg_erro = str(e)
+        # Se o erro for "não encontrado", retornamos 404. Se for validação, 400.
+        if "não encontrado" in msg_erro:
+            return jsonify({'error': msg_erro}), 404
+        return jsonify({'error': msg_erro}), 400
+
+    except Exception:
+        return jsonify({'error': 'Erro interno do servidor'}), 500
 
 
 @bp_delivery.route('/<int:id>', methods=['DELETE'])
 @admin_required()
 def delete_neighborhood(id):
-    bairro = Neighborhood.query.get(id)
-    if bairro:
-        db.session.delete(bairro)
-        db.session.commit()
-    return jsonify({'message': 'Deletado'}), 200
+    try:
+        # Chama a lógica no service
+        delivery_service.deletar_bairro_logic(id)
+        return jsonify({'message': 'Deletado com sucesso'}), 200
+
+    except ValueError as e:
+        # Captura especificamente o erro de ID inexistente
+        return jsonify({'error': str(e)}), 404
+
+    except Exception:
+        return jsonify({'error': 'Erro interno ao deletar'}), 500

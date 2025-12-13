@@ -47,33 +47,38 @@ def get_dashboard_stats():
     orders = query.order_by(Order.date_created).all()
 
     # 4. Processamento dos Dados (Agregação)
-    total_faturado = sum((o.total_price for o in orders), Decimal('0.00'))
-    total_pedidos = len(orders)
+    total_faturado = db.session.query(func.sum(Order.total_price)) \
+                         .filter(Order.status == 'Concluído') \
+                         .filter(Order.date_created.between(start_date, end_date)) \
+                         .scalar() or 0.0  # scalar pega o valor único
 
-    # Agrupa por dia para o gráfico
-    # Cria um dicionário { "DD/MM": valor }
-    dados_grafico = {}
+    # 2. Contagem Total
+    total_pedidos = db.session.query(func.count(Order.id)) \
+                        .filter(Order.status == 'Concluído') \
+                        .filter(Order.date_created.between(start_date, end_date)) \
+                        .scalar() or 0
 
-    # Preenche o intervalo com 0 para os dias sem vendas (opcional, mas fica mais bonito)
-    # Para simplificar, vamos iterar sobre os pedidos encontrados
-    for order in orders:
-        dia_chave = order.date_created.strftime('%d/%m')
-        if dia_chave not in dados_grafico:
-            dados_grafico[dia_chave] = Decimal('0.00')
-        dados_grafico[dia_chave] += order.total_price
+    # 3. Gráfico (Agrupado por Dia no SQL)
+    # Isso evita trazer milhares de linhas para o Python
+    # (Sintaxe para SQLite/Postgres pode variar um pouco na extração de data,
+    #  abaixo um exemplo genérico compatível com a maioria via func.date)
+    stats_by_day = db.session.query(
+        func.date(Order.date_created),
+        func.sum(Order.total_price)
+    ).filter(
+        Order.status == 'Concluído',
+        Order.date_created.between(start_date, end_date)
+    ).group_by(func.date(Order.date_created)).all()
 
-    labels = list(dados_grafico.keys())
-    # Converte os valores Decimal para float para o Chart.js entender
-    data_values = [float(val) for val in dados_grafico.values()]
+    # Monta o JSON
+    labels = [str(day) for day, _ in stats_by_day]
+    data_values = [float(amount) for _, amount in stats_by_day]
 
     return jsonify({
-        "total_periodo": float(total_faturado),  # Converte para float
+        "total_periodo": float(total_faturado),
         "qtd_pedidos": total_pedidos,
-        "grafico": {
-            "labels": labels,
-            "data": data_values
-        },
-        "periodo_info": f"{start_date.strftime('%d/%m')} até {end_date.strftime('%d/%m')}"
+        "grafico": {"labels": labels, "data": data_values},
+        "periodo_info": "..."
     }), 200
 
 

@@ -77,6 +77,7 @@ class AdminUserListSchema(ma.SQLAlchemyAutoSchema):
         load_instance = True
 
 class NeighborhoodSchema(ma.SQLAlchemyAutoSchema):
+    price = fields.Float()
     class Meta:
         model = Neighborhood
         load_instance = True
