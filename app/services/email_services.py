@@ -4,7 +4,7 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from flask import current_app
 import os
-import threading
+import gevent
 
 
 # import requests  <-- COMENTADO: Não utilizado
@@ -15,9 +15,19 @@ def _send_async_email(app, msg):
     """Envia o e-mail em segundo plano (background thread)"""
     with app.app_context():
         try:
-            server = smtplib.SMTP(os.getenv('MAIL_SERVER'), int(os.getenv('MAIL_PORT')))
-            server.starttls()  # Segurança
-            server.login(os.getenv('MAIL_USERNAME'), os.getenv('MAIL_PASSWORD'))
+            # Pega as configs
+            server_host = os.getenv('MAIL_SERVER')
+            server_port = int(os.getenv('MAIL_PORT', 587))
+            username = os.getenv('MAIL_USERNAME')
+            password = os.getenv('MAIL_PASSWORD')
+
+            if not server_host or not username:
+                print("❌ Erro Email: Variáveis de ambiente MAIL_... não configuradas.")
+                return
+
+            server = smtplib.SMTP(server_host, server_port)
+            server.starttls()
+            server.login(username, password)
             server.send_message(msg)
             server.quit()
             print(f"📧 E-mail enviado para: {msg['To']}")
@@ -61,8 +71,8 @@ def send_reset_email(to_email, link_url):  # <-- MUDANÇA: Recebe link_url, não
     msg.attach(MIMEText(html_body, 'html'))
 
     app = current_app._get_current_object()
-    thread = threading.Thread(target=_send_async_email, args=(app, msg))
-    thread.start()
+    gevent.spawn(_send_async_email, app, msg)
+
 
 
 def send_verification_email(user_email, user_name, link_url):  # <-- MUDANÇA: Recebe link_url
@@ -98,8 +108,8 @@ def send_verification_email(user_email, user_name, link_url):  # <-- MUDANÇA: R
 
     try:
         app = current_app._get_current_object()
-        thread = threading.Thread(target=_send_async_email, args=(app, msg))
-        thread.start()
+        gevent.spawn(_send_async_email, app, msg)
+
         return True
     except Exception as e:
         print(f"❌ Erro ao preparar envio de email: {str(e)}")
@@ -145,8 +155,8 @@ def send_magic_link_email(to_email, user_name, link_url):
 
     try:
         app = current_app._get_current_object()
-        thread = threading.Thread(target=_send_async_email, args=(app, msg))
-        thread.start()
+        gevent.spawn(_send_async_email, app, msg)
+
         return True
     except Exception as e:
         print(f"❌ Erro ao enviar Magic Link: {str(e)}")
