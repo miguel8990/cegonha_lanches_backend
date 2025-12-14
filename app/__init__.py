@@ -53,7 +53,9 @@ def create_app():
 
     # 4. Configura CORS
     # Adicionando o Frontend explicitamente para garantir
-    frontend_url = os.getenv('FRONTEND_URL', 'https://miguel8990.github.io')
+    frontend_origin = os.getenv('FRONTEND_URL', 'https://miguel8990.github.io')
+    if "/cegonha_lanches_frontend" in frontend_origin:
+        frontend_origin = "https://miguel8990.github.io"
 
     # Extrai o domínio base caso a URL venha com subpastas (para o CORS aceitar)
     # Ex: https://miguel8990.github.io/projeto -> https://miguel8990.github.io
