@@ -21,7 +21,7 @@ def create_app():
 
     print(f"🔧 Iniciando App. Ambiente: {env_flask} | Modo Produção: {is_production}")
 
-    app.config["JWT_TOKEN_LOCATION"] = ["cookies"]
+    app.config["JWT_TOKEN_LOCATION"] = ["cookies", "headers"]
     app.config["JWT_ACCESS_COOKIE_NAME"] = "token"
 
     # Força configurações de cookie seguro se for produção

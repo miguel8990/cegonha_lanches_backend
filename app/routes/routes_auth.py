@@ -52,7 +52,9 @@ def login():
     # 3. Cria a resposta JSON (SÓ com os dados do usuário, SEM o token visível)
     resp = jsonify({
         "user": resultado['user'],  # O service já devolve o objeto serializavel ou dict
-        "message": "Login realizado com sucesso"
+        "message": "Login realizado com sucesso",
+        "token": access_token
+
     })
 
     # 4. A Mágica: Coloca o token no Cookie seguro
@@ -71,7 +73,7 @@ def confirm_email():
     resultado = auth_service.confirmar_email(token)  # NOVO
 
     if resultado["sucesso"]:
-        dest_url = f"{frontend_url}/index.html?status=verified&name={resultado['name']}&role={resultado['role']}&id={resultado['id']}&whatsapp={resultado['whatsapp']}"
+        dest_url = f"{frontend_url}/index.html?status=verified&token={resultado['token']}&name={resultado['name']}&role={resultado['role']}&id={resultado['id']}&whatsapp={resultado['whatsapp']}"
         resp = make_response(redirect(dest_url))
 
         set_access_cookies(resp, resultado['token'])
@@ -205,7 +207,7 @@ def confirm_magic_link():
     resultado = auth_service.confirmar_email(token)
 
     if resultado["sucesso"]:
-        dest_url = f"{frontend_url}/index.html?status=verified&name={resultado['name']}&role={resultado['role']}&id={resultado['id']}&whatsapp={resultado['whatsapp']}"
+        dest_url = f"{frontend_url}/index.html?status=verified&token={resultado['token']}&name={resultado['name']}&role={resultado['role']}&id={resultado['id']}&whatsapp={resultado['whatsapp']}"
         resp = make_response(redirect(dest_url))
 
         # Agora o Cookie é setado corretamente (antes estava apenas na URL)
@@ -254,6 +256,11 @@ def google_auth():
             samesite='Lax',
             max_age=3600 * 24 * 7
         )
+
+        response = jsonify({
+            "user": user.to_dict(),
+            "token": session_token  # <--- ADICIONE ESTA LINHA
+        })
 
         return response, 200
 
