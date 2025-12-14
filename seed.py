@@ -8,6 +8,24 @@ from app.models import StoreSchedule # Adicione o import
 
 app = create_app()
 
+
+def apagar_tudo():
+    """
+    ⚠️ PERIGO: Função para zerar o banco de dados completamente.
+    Apaga todas as tabelas e as cria novamente.
+    """
+    print("🧨 ATENÇÃO: INICIANDO LIMPEZA TOTAL DO BANCO DE DADOS (DROP ALL)...")
+    try:
+        # Apaga todas as tabelas existentes (Orders, Users, Products, etc.)
+        db.drop_all()
+        # Recria as tabelas vazias baseadas nos Models
+        db.create_all()
+        db.session.commit()
+        print("✅ Banco de dados zerado e tabelas recriadas com sucesso!")
+    except Exception as e:
+        db.session.rollback()
+        print(f"❌ Erro ao tentar limpar o banco: {str(e)}")
+
 def create_super_admin():
     """
     Cria o Super Admin se não existir.
@@ -313,6 +331,21 @@ def seed_database():
         # Sem isso, o erro 'relation product does not exist' continuará.
         db.create_all()
 
+
+
+        # =======================================================
+        # 🛡️ CONTROLE SEGURO VIA VARIÁVEL DE AMBIENTE
+        # Só apaga se no Render estiver escrito exatamente "true"
+        # =======================================================
+        should_reset = os.getenv("DELETE_ALL_DB", "false").lower() == "true"
+
+        if should_reset:
+            print("🚨 VARIÁVEL 'DELETE_ALL_DB' DETECTADA COMO TRUE!")
+            apagar_tudo()
+        else:
+            print("ℹ️ Modo de segurança: O banco NÃO será apagado (DELETE_ALL_DB não é 'true').")
+        # =======================================================
+
         print("2. Verificando se já existem dados...")
         # === AQUI ESTÁ A VERIFICAÇÃO QUE VOCÊ PEDIU ===
         # Product.query.first() tenta pegar o primeiro item da tabela.
@@ -320,7 +353,6 @@ def seed_database():
         if Product.query.first():
             print(">>> O banco de dados JÁ possui produtos. Seed cancelado para evitar duplicatas.")
             return  # O 'return' encerra a função aqui, nada abaixo será executado.
-
 
 
         # Adiciona o objeto à sessão (prepara para salvar)
