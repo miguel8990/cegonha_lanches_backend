@@ -2,69 +2,70 @@ from flask import Flask
 from flask_cors import CORS
 from .errors import configure_errors
 from config import Config
-from .extensions import db, jwt, migrate, ma, socketio
-from .routes.routes_address import bp_address
-from .routes.routes_chat import bp_chat
-from .routes.routes_upload import bp_upload
-from .extensions import db, jwt, migrate, ma, limiter, redis_client
-from .routes.routes_config import bp_config
+from .extensions import db, jwt, migrate, ma, socketio, limiter, redis_client
+import os
 
 
 def create_app():
     app = Flask(__name__)
 
-    # 1. Carrega configurações do Config.py
+    # 1. Carrega configurações básicas do Config.py
     app.config.from_object(Config)
 
-    # 2. PEGA O REDIS ANTES DE INICIAR OS PLUGINS
-    import os
-    redis_url = os.getenv('REDIS_URI')  # Ex: redis://localhost:6379/0
+    # ==========================================================================
+    # CORREÇÃO CRÍTICA: Configuração do JWT ANTES de iniciar a extensão
+    # ==========================================================================
+    # Verifica a variável de ambiente (garante que lê 'production' corretamente)
+    env_flask = os.getenv('FLASK_ENV', 'development')
+    is_production = env_flask == 'production'
 
-    # 3. CONFIGURA O FLASK PARA USAR O REDIS (Se ele existir)
+    print(f"🔧 Iniciando App. Ambiente: {env_flask} | Modo Produção: {is_production}")
+
+    app.config["JWT_TOKEN_LOCATION"] = ["cookies"]
+    app.config["JWT_ACCESS_COOKIE_NAME"] = "token"
+
+    # Força configurações de cookie seguro se for produção
+    if is_production:
+        app.config["JWT_COOKIE_SECURE"] = True
+        app.config["JWT_COOKIE_SAMESITE"] = "None"
+        app.config["JWT_COOKIE_CSRF_PROTECT"] = False
+    else:
+        app.config["JWT_COOKIE_SECURE"] = False
+        app.config["JWT_COOKIE_SAMESITE"] = "Lax"
+        app.config["JWT_COOKIE_CSRF_PROTECT"] = False
+
+    # ==========================================================================
+
+    # 2. Configura REDIS
+    redis_url = os.getenv('REDIS_URI')
     if redis_url:
-        # Configuração para o Flask-Limiter parar de reclamar da memória
         app.config['RATELIMIT_STORAGE_URI'] = redis_url
-
-        # Configuração para o redis_client (Flask-Redis) genérico
         app.config['REDIS_URL'] = redis_url
-
         if redis_client:
             redis_client.init_app(app)
 
-        # ... Inicia Banco e Migrations ...
+    # 3. Inicia Extensões (AGORA COM AS CONFIGURAÇÕES CERTAS CARREGADAS)
     db.init_app(app)
     migrate.init_app(app, db)
-
-    # ... Inicia JWT e Marshmallow ...
-    jwt.init_app(app)
+    jwt.init_app(app)  # <--- Agora ele vai ler o JWT_COOKIE_SECURE = True
     ma.init_app(app)
-
-    # 4. INICIA O LIMITER (Agora ele vai ler a config do Redis acima)
     limiter.init_app(app)
 
-    # 5. INICIA O REDIS CLIENT GERAL (Faltava isso!)
-    # Isso permite que você use redis_client.set() nas suas rotas
+    # 4. Configura CORS
+    # Adicionando o Frontend explicitamente para garantir
+    frontend_url = os.getenv('FRONTEND_URL', 'https://miguel8990.github.io')
 
-
-    # ... Configurações de Cookie JWT (Mantive seu código igual) ...
-    is_production = os.getenv('FLASK_ENV') == 'production'
-    app.config["JWT_TOKEN_LOCATION"] = ["cookies"]
-    app.config["JWT_ACCESS_COOKIE_NAME"] = "token"
-    app.config["JWT_COOKIE_SECURE"] = is_production
-    app.config["JWT_COOKIE_SAMESITE"] = "None" if is_production else "Lax"
-    if is_production:
-        app.config["JWT_COOKIE_SECURE"] = True
-    app.config["JWT_COOKIE_CSRF_PROTECT"] = False
-
-    # ... CORS (Mantive igual) ...
-    from . import models
-    CORS(app, resources={r"/*": {"origins": [
+    # Extrai o domínio base caso a URL venha com subpastas (para o CORS aceitar)
+    # Ex: https://miguel8990.github.io/projeto -> https://miguel8990.github.io
+    origins_list = [
         "https://miguel8990.github.io",
         "http://localhost:8000",
         "http://127.0.0.1:8000"
-    ]}}, supports_credentials=True)
+    ]
 
-    # ... Importação e Registro de Blueprints (Mantive igual) ...
+    CORS(app, resources={r"/*": {"origins": origins_list}}, supports_credentials=True)
+
+    # 5. Registro de Blueprints
     from .routes.routes_menu import bp_menu
     from .routes.routes_orders import bp_orders
     from .routes.routes_auth import bp_auth
@@ -92,13 +93,7 @@ def create_app():
 
     configure_errors(app)
 
-    # 6. INICIA O SOCKETIO
-    # O message_queue é útil se você tiver vários workers (Gunicorn),
-    # se for só um servidor simples, nem precisaria, mas não faz mal ter.
-    socketio.init_app(
-        app,
-        cors_allowed_origins="*",
-        message_queue=redis_url
-    )
+    # 6. Inicia SocketIO
+    socketio.init_app(app, cors_allowed_origins="*", message_queue=redis_url)
 
     return app
