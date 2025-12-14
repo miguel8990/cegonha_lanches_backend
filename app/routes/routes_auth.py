@@ -233,34 +233,30 @@ def google_auth():
         return jsonify({'message': 'Credencial inválida.'}), 400
 
     try:
-        # 1. Autentica e recebe o objeto USER do banco de dados
+        # 1. Autentica e recebe o objeto USER
         user = auth_service.login_with_google(credential_token)
+        session_token = auth_service.create_token(user.id)
 
-        # 2. Gera o token de sessão (JWT do seu sistema)
-        # session_token = create_token(user.id) <-- ANTIGO
-        session_token = auth_service.create_token(user.id)  # NOVO: usando do service
+        # 2. Prepara os dados de resposta (JSON)
+        # Inclui o TOKEN explicitamente para o celular salvar
+        resp_data = {
+            "user": user.to_dict(),
+            "token": session_token
+        }
 
-        # 3. Prepara os dados do usuário para o Frontend
-        # (Isso garante que 'name', 'email', etc. sejam enviados)
-        user_data = user.to_dict()
+        # 3. Cria a resposta UMA ÚNICA VEZ
+        response = jsonify(resp_data)
 
-        response = jsonify({"user": user_data})
-
-        # 4. Configura o Cookie HttpOnly
+        # 4. Configura o Cookie (Backup para Desktop)
         is_production = os.getenv('FLASK_ENV') == 'production'
         response.set_cookie(
             'token',
             session_token,
             httponly=True,
             secure=is_production,
-            samesite='Lax',
+            samesite='None' if is_production else 'Lax',  # Ajuste fino para produção
             max_age=3600 * 24 * 7
         )
-
-        response = jsonify({
-            "user": user.to_dict(),
-            "token": session_token  # <--- ADICIONE ESTA LINHA
-        })
 
         return response, 200
 
