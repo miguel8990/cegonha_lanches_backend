@@ -1,6 +1,6 @@
 from flask import Blueprint, jsonify, request, redirect, make_response
 from app.services import auth_service
-from flask_jwt_extended import jwt_required, get_jwt_identity
+from flask_jwt_extended import jwt_required, get_jwt_identity, unset_jwt_cookies
 from app.decorators import super_admin_required  # Importe o novo decorator
 from app.extensions import limiter
 from flask_jwt_extended import get_jwt, set_access_cookies
@@ -264,5 +264,5 @@ def google_auth():
 def logout():
     response = jsonify({"msg": "Logout com sucesso"})
     # Apaga o cookie definindo validade para o passado
-    response.set_cookie('token', '', expires=0)
+    unset_jwt_cookies(response)
     return response

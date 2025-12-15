@@ -3,6 +3,7 @@ from flask_cors import CORS
 from .errors import configure_errors
 from config import Config
 from .extensions import db, jwt, migrate, ma, socketio, limiter, redis_client
+from werkzeug.middleware.proxy_fix import ProxyFix
 import os
 
 
@@ -18,6 +19,7 @@ def create_app():
     # Verifica a variável de ambiente (garante que lê 'production' corretamente)
     env_flask = os.getenv('FLASK_ENV', 'development')
     is_production = env_flask == 'production'
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
 
     print(f"🔧 Iniciando App. Ambiente: {env_flask} | Modo Produção: {is_production}")
 
@@ -27,7 +29,7 @@ def create_app():
     # Força configurações de cookie seguro se for produção
     if is_production:
         app.config["JWT_COOKIE_SECURE"] = True
-        app.config["JWT_COOKIE_SAMESITE"] = "Lax"
+        app.config["JWT_COOKIE_SAMESITE"] = "None"
         app.config["JWT_COOKIE_CSRF_PROTECT"] = False
     else:
         app.config["JWT_COOKIE_SECURE"] = False
