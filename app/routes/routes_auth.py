@@ -143,12 +143,18 @@ def google_auth():
     credential_token = data.get('credential')
 
     if not credential_token:
+        print("credencial invalida")
         return jsonify({'message': 'Credencial inválida.'}), 400
+
 
     try:
         user = auth_service.login_with_google(credential_token)
-        session_token = auth_service.create_token(user.id)
 
+        print(f"DEBUG AUTH: Gerando token para User ID: {user.id} (Tipo: {type(user.id)})")
+        session_token = auth_service.create_token(user.id)
+        if user.id is None:
+            print("Falha ao gerar ID do usuário.")
+            raise ValueError("Falha ao gerar ID do usuário.")
         resp_data = {
             "user": {
                 "id": user.id,
@@ -163,6 +169,7 @@ def google_auth():
 
         # 🔥 SETA O COOKIE
         set_access_cookies(response, session_token)
+        print("cookie setado")
 
         return response, 200
 

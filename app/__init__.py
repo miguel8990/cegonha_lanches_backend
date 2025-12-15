@@ -34,6 +34,7 @@ def create_app():
     # 🔥 CORREÇÃO: SameSite deve ser "None" em produção E Secure=True
     if is_production:
         app.config["JWT_COOKIE_SECURE"] = True
+        print("em produção: samesite: None, secure: True")
         app.config["JWT_COOKIE_SAMESITE"] = "None"  # Permite cross-origin
     else:
         app.config["JWT_COOKIE_SECURE"] = False

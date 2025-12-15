@@ -100,6 +100,7 @@ def register_user(dados):
     try:
         db.session.add(new_user)
         db.session.commit()
+        db.session.refresh(new_user)
     except Exception as e:
         db.session.rollback()
         return {"sucesso": False, "erro": f"Erro no banco de dados: {str(e)}"}
@@ -312,6 +313,7 @@ def login_with_google(token):
         )
         db.session.add(user)
         db.session.commit()
+        db.session.refresh(user)
 
     return user
 
@@ -402,7 +404,7 @@ def magic_link(data):
     # podemos apontar para lá se ela aceitar o tipo "magic_link_login" (ajustei acima).
     # OU apontar para /magic-login/confirm se você mantiver essa rota.
     # Vou apontar para magic-login/confirm para manter compatibilidade com sua rota existente.
-    link_url = f"{api_url}/api/auth/magic-login/confirm?token={magic_token}"
+    link_url = f"{api_url}/api/auth/confirm-email?token={magic_token}"
 
     if send_magic_link_email(user.email, user.name, link_url):
         print(f"📧 Magic Link enviado para {user.email}")
