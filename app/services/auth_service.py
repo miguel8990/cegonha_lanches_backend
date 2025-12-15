@@ -398,18 +398,10 @@ def magic_link(data):
         expires_delta=datetime.timedelta(minutes=15)
     )
 
-    api_url = os.getenv('API_BASE_URL', 'http://localhost:5000')
-    # O link deve apontar para a rota de CONFIRMAÇÃO
-    # Como você tem a rota /confirm-email que usa a função confirmar_email,
-    # podemos apontar para lá se ela aceitar o tipo "magic_link_login" (ajustei acima).
-    # OU apontar para /magic-login/confirm se você mantiver essa rota.
-    # Vou apontar para magic-login/confirm para manter compatibilidade com sua rota existente.
-    link_url = f"{api_url}/api/auth/confirm-email?token={magic_token}"
+    
 
-    if send_magic_link_email(user.email, user.name, link_url):
+    if send_magic_link_email(user.email, user.name, magic_token): # <--- Passando só o token
         print(f"📧 Magic Link enviado para {user.email}")
-        # return jsonify({'message': 'Link de acesso enviado para seu e-mail!'}), 200 <-- COMENTADO
-        return {"sucesso": True, "mensagem": "Link enviado para seu e-mail."}  # <-- NOVO
+        return {"sucesso": True, "mensagem": "Link enviado para seu e-mail."}
     else:
-        # return jsonify({'error': 'Erro ao enviar e-mail. Tente novamente.'}), 500 <-- COMENTADO
-        return {"sucesso": False, "erro": "Erro ao enviar e-mail."}  # <-- NOVO
+        return {"sucesso": False, "erro": "Erro ao enviar e-mail."}

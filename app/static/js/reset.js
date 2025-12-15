@@ -3,9 +3,10 @@
 const isLocalhost =
   window.location.hostname === "localhost" ||
   window.location.hostname === "127.0.0.1";
+
 const API_BASE_URL = isLocalhost
   ? `http://${window.location.hostname}:5000/api`
-  : "https://cegonha-lanches-backend.onrender.com/api";
+  : "/api"; // <--- NOVO: Caminho relativo
 
 function showToast(msg, type = "info") {
   const container = document.getElementById("toast-container");

@@ -72,28 +72,33 @@ def login():
 @limiter.limit("10 per hour")
 def confirm_email():
     """
-    Rota ÚNICA para confirmar email (registro) E magic link (login).
+    Rota que valida o token, seta o cookie e redireciona para o site.
     """
     token = request.args.get('token')
-    frontend_url = os.getenv('FRONTEND_URL', 'http://localhost:8000')
+    
+    # 🔥 CORREÇÃO: Detecta a URL raiz dinamicamente (Tudo em Um)
+    # Isso evita redirecionar para localhost quando estiver no Render
+    base_url = request.url_root.rstrip('/')
+    
+    # URLs de destino
+    success_url = f"{base_url}/index.html?status=verified"
+    error_url = f"{base_url}/index.html?status=error_token"
 
     if not token:
-        return redirect(f"{frontend_url}/index.html?status=error_token")
+        return redirect(error_url)
 
+    # Valida o token e cria a sessão
     resultado = auth_service.confirmar_email(token)
 
     if resultado["sucesso"]:
-        # Prepara URL de redirecionamento
-        dest_url = f"{frontend_url}/index.html?status=verified"
+        resp = make_response(redirect(success_url))
 
-        resp = make_response(redirect(dest_url))
-
-        # 🔥 SETA O COOKIE COM O TOKEN DE SESSÃO
+        # 🔥 PONTO CRÍTICO: Aqui o cookie de sessão é gravado!
         set_access_cookies(resp, resultado['token'])
 
         return resp
     else:
-        return redirect(f"{frontend_url}/index.html?status=error_token")
+        return redirect(error_url)
 
 
 # =============================================================================

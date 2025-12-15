@@ -2,9 +2,10 @@
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
-from flask import current_app
+from flask import current_app, render_template, request 
 import os
 import gevent
+
 
 
 # import requests  <-- COMENTADO: Não utilizado
@@ -116,11 +117,21 @@ def send_verification_email(user_email, user_name, link_url):  # <-- MUDANÇA: R
         return False
 
 
-def send_magic_link_email(to_email, user_name, link_url):
+def send_magic_link_email(to_email, user_name, token):
     """
-    Envia o Magic Link para login sem senha.
-    (Esta função já estava correta, recebendo link_url)
+    Envia o Magic Link apontando para a rota de validação da API.
     """
+    
+    # 1. Determina a URL base (ex: https://cegonha...onrender.com)
+    try:
+        base_url = request.url_root.rstrip('/')
+    except RuntimeError:
+        base_url = os.getenv('FRONTEND_URL', 'http://localhost:5000')
+
+    # 🔥 CORREÇÃO: O link deve apontar para a ROTA DE CONFIRMAÇÃO DA API
+    # Isso garante que o cookie seja criado antes de abrir o site.
+    link_url = f"{base_url}/api/auth/confirm-email?token={token}"
+
     subject = "Seu Link Mágico de Acesso ✨ - Cegonha Lanches"
     sender = os.getenv('MAIL_DEFAULT_SENDER', os.getenv('MAIL_USERNAME'))
 
@@ -142,6 +153,9 @@ def send_magic_link_email(to_email, user_name, link_url):
                     Este link é válido por 15 minutos.<br>
                     Se não foi você, ignore este e-mail.
                 </p>
+                <p style="font-size: 10px; color: #aaa; margin-top: 15px;">
+                   Se o botão não funcionar, copie: {link_url}
+                </p>
             </div>
         </body>
     </html>
@@ -156,7 +170,6 @@ def send_magic_link_email(to_email, user_name, link_url):
     try:
         app = current_app._get_current_object()
         gevent.spawn(_send_async_email, app, msg)
-
         return True
     except Exception as e:
         print(f"❌ Erro ao enviar Magic Link: {str(e)}")

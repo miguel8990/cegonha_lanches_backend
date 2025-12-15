@@ -7,7 +7,10 @@ const isLocalhost =
   window.location.hostname === "localhost" ||
   window.location.hostname === "127.0.0.1";
 
-export const API_BASE_URL = "/api";
+// 🔥 MUDANÇA: Use '/api' na produção (relativo)
+export const API_BASE_URL = isLocalhost
+  ? `http://${window.location.hostname}:5000/api`
+  : "/api"; // <--- NOVO: Caminho relativo
 
 /**
  * HELPER CENTRALIZADO DE REQUISIÇÕES
@@ -58,7 +61,7 @@ function adaptarProduto(produtoBack) {
     name: produtoBack.name,
     description: produtoBack.description,
     price: parseFloat(produtoBack.price),
-    image: produtoBack.image_url || "assets/burger_classic.png",
+    image: produtoBack.image_url || "assets/aguia.jpg",
     carnes: detalhes.carnes || [],
     adicionais: detalhes.adicionais || [],
     acompanhamentos: detalhes.acompanhamentos || [],

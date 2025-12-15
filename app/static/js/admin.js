@@ -58,9 +58,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const isLocalhost =
     window.location.hostname === "localhost" ||
     window.location.hostname === "127.0.0.1";
-  const socketUrl = isLocalhost
-    ? "http://localhost:5000"
-    : "https://cegonha-lanches-backend.onrender.com"; // Ajuste conforme seu api.js
+  const socketUrl = isLocalhost ? "http://localhost:5000" : ""; // Ajuste conforme seu api.js
 
   try {
     const socket = io(socketUrl);
