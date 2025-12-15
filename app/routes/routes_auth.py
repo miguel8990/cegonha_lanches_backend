@@ -241,22 +241,15 @@ def google_auth():
         # Inclui o TOKEN explicitamente para o celular salvar
         resp_data = {
             "user": user.to_dict(),
-            "token": session_token
+
         }
 
         # 3. Cria a resposta UMA ÚNICA VEZ
         response = jsonify(resp_data)
 
         # 4. Configura o Cookie (Backup para Desktop)
-        is_production = os.getenv('FLASK_ENV') == 'production'
-        response.set_cookie(
-            'token',
-            session_token,
-            httponly=True,
-            secure=is_production,
-            samesite='None' if is_production else 'Lax',  # Ajuste fino para produção
-            max_age=3600 * 24 * 7
-        )
+
+        set_access_cookies(response, session_token)
 
         return response, 200
 

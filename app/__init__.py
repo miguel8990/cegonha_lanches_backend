@@ -21,13 +21,13 @@ def create_app():
 
     print(f"🔧 Iniciando App. Ambiente: {env_flask} | Modo Produção: {is_production}")
 
-    app.config["JWT_TOKEN_LOCATION"] = ["cookies", "headers"]
+    app.config["JWT_TOKEN_LOCATION"] = ["cookies"]
     app.config["JWT_ACCESS_COOKIE_NAME"] = "token"
 
     # Força configurações de cookie seguro se for produção
     if is_production:
         app.config["JWT_COOKIE_SECURE"] = True
-        app.config["JWT_COOKIE_SAMESITE"] = "None"
+        app.config["JWT_COOKIE_SAMESITE"] = "Lax"
         app.config["JWT_COOKIE_CSRF_PROTECT"] = False
     else:
         app.config["JWT_COOKIE_SECURE"] = False
@@ -51,21 +51,19 @@ def create_app():
     ma.init_app(app)
     limiter.init_app(app)
 
-    # 4. Configura CORS
-    # Adicionando o Frontend explicitamente para garantir
-    frontend_origin = os.getenv('FRONTEND_URL', 'https://miguel8990.github.io')
-    if "/cegonha_lanches_frontend" in frontend_origin:
-        frontend_origin = "https://miguel8990.github.io"
-
-    # Extrai o domínio base caso a URL venha com subpastas (para o CORS aceitar)
-    # Ex: https://miguel8990.github.io/projeto -> https://miguel8990.github.io
-    origins_list = [
-        "https://miguel8990.github.io",
-        "http://localhost:8000",
-        "http://127.0.0.1:8000"
-    ]
-
-    CORS(app, resources={r"/*": {"origins": origins_list}}, supports_credentials=True)
+    CORS(
+        app,
+        supports_credentials=True,
+        resources={
+            r"/api/*": {
+                "origins": [
+                    "https://miguel8990.github.io",
+                    "http://localhost:8000",
+                    "http://127.0.0.1:8000"
+                ]
+            }
+        }
+    )
 
     # 5. Registro de Blueprints
     from .routes.routes_menu import bp_menu
