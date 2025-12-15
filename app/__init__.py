@@ -12,35 +12,37 @@ def create_app():
     app.config.from_object(Config)
 
     # ==========================================================================
-    # CORREÇÃO CRÍTICA: Configuração JWT ANTES de inicializar
+    # CORREÇÃO: Detecção robusta de Produção
     # ==========================================================================
-    env_flask = os.getenv('FLASK_ENV', 'development')
-    is_production = env_flask == 'production'
+    # Se FLASK_ENV for production OU se estiver rodando no Render ('RENDER' existe)
+    is_production = os.getenv('FLASK_ENV') == 'production' or os.getenv('RENDER') is not None
 
-    # Proxy fix para produção (Render, Heroku, etc)
     if is_production:
+        # ProxyFix é essencial no Render para HTTPS funcionar
         app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)
 
-    print(f"🔧 Ambiente: {env_flask} | Produção: {is_production}")
+    print(f"🔧 Ambiente: {'Produção' if is_production else 'Dev'} | Secure Cookies: {is_production}")
 
     # JWT Cookie Configuration
     app.config["JWT_TOKEN_LOCATION"] = ["cookies"]
-    app.config["JWT_COOKIE_NAME"] = "token"
+    app.config["JWT_ACCESS_COOKIE_NAME"] = "token"  # Garante o nome certo
     app.config["JWT_ACCESS_COOKIE_PATH"] = "/"
 
-    # 🔥 CRÍTICO: Sempre False para desenvolvimento local
-    app.config["JWT_COOKIE_SECURE"] = is_production
-
-    # 🔥 CORREÇÃO: SameSite deve ser "None" em produção E Secure=True
+    # 🔥 CORREÇÃO DE COOKIES CROSS-ORIGIN
     if is_production:
+        print("🌍 Modo Produção: SameSite=None, Secure=True (Cross-Origin Ativo)")
         app.config["JWT_COOKIE_SECURE"] = True
-        print("em produção: samesite: None, secure: True")
-        app.config["JWT_COOKIE_SAMESITE"] = "None"  # Permite cross-origin
+        app.config["JWT_COOKIE_SAMESITE"] = "None"  # Obrigatório para GitHub -> Render
     else:
+        print("💻 Modo Dev: SameSite=Lax, Secure=False")
         app.config["JWT_COOKIE_SECURE"] = False
-        app.config["JWT_COOKIE_SAMESITE"] = "Lax"  # Localhost não precisa None
+        app.config["JWT_COOKIE_SAMESITE"] = "Lax"
 
     app.config["JWT_COOKIE_CSRF_PROTECT"] = False
+
+
+
+
 
     # ==========================================================================
     # REDIS
