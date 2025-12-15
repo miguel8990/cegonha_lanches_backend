@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Recuperar Senha | Cegonha Lanches</title>
+
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css"
+    />
+    <link rel="stylesheet" href="css/style.css" />
+
+    <style>
+      body {
+        background-color: #333;
+        background-size: cover;
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+      }
+      /* Camada escura */
+      body::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.8);
+        z-index: 0;
+      }
+
+      .reset-card {
+        position: relative;
+        z-index: 2;
+        background: #1a1a1a;
+        padding: 40px;
+        border-radius: 12px;
+        width: 100%;
+        max-width: 450px;
+        border: 1px solid #333;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+      }
+
+      .step-container {
+        display: none; /* JS controla qual aparece */
+        animation: fadeIn 0.4s ease;
+      }
+      .step-container.active {
+        display: block;
+      }
+
+      .back-link {
+        display: block;
+        text-align: center;
+        margin-top: 20px;
+        color: #888;
+        text-decoration: none;
+        font-size: 0.9rem;
+      }
+      .back-link:hover {
+        color: #fff;
+      }
+
+      .success-msg {
+        background: rgba(46, 204, 113, 0.1);
+        border: 1px solid #2ecc71;
+        color: #2ecc71;
+        padding: 15px;
+        border-radius: 8px;
+        text-align: center;
+        margin-bottom: 20px;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="toast-container"></div>
+
+    <div class="reset-card">
+      <div style="text-align: center; margin-bottom: 20px">
+        <img src="assets/logo2.webp" alt="Cegonha" style="height: 60px" />
+      </div>
+
+      <div id="step-request" class="step-container">
+        <h2 style="text-align: center; color: white; margin-bottom: 10px">
+          Recuperar Senha
+        </h2>
+        <p
+          style="
+            color: #ccc;
+            text-align: center;
+            margin-bottom: 25px;
+            font-size: 0.9rem;
+          "
+        >
+          Digite seu e-mail abaixo. Enviaremos um link seguro para você
+          redefinir sua senha.
+        </p>
+
+        <form id="form-request-reset">
+          <div class="form-group">
+            <label>E-mail Cadastrado</label>
+            <input
+              type="email"
+              id="email-request"
+              required
+              placeholder="ex: joao@email.com"
+            />
+          </div>
+          <button type="submit" class="btn-primary full-width">
+            Enviar Link de Recuperação
+          </button>
+        </form>
+      </div>
+
+      <div id="step-sent" class="step-container">
+        <div class="success-msg">
+          <i
+            class="fa-solid fa-envelope-circle-check"
+            style="font-size: 2rem; margin-bottom: 10px"
+          ></i
+          ><br />
+          <strong>E-mail Enviado!</strong>
+        </div>
+        <p style="color: #ccc; text-align: center">
+          Verifique sua caixa de entrada (e spam). Clique no link enviado para
+          criar sua nova senha.
+        </p>
+      </div>
+
+      <div id="step-new-pass" class="step-container">
+        <h2
+          style="
+            text-align: center;
+            color: var(--color-gold);
+            margin-bottom: 10px;
+          "
+        >
+          Nova Senha
+        </h2>
+        <p
+          style="
+            color: #ccc;
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 0.9rem;
+          "
+        >
+          Crie uma senha forte para sua conta.
+        </p>
+
+        <form id="form-confirm-reset">
+          <div class="form-group">
+            <label>Nova Senha</label>
+            <input
+              type="password"
+              id="new-password"
+              required
+              placeholder="******"
+              oninput="validarPass(this.value)"
+            />
+            <small id="pass-strength" class="password-strength"></small>
+          </div>
+          <div class="form-group">
+            <label>Confirmar Senha</label>
+            <input
+              type="password"
+              id="confirm-password"
+              required
+              placeholder="******"
+            />
+          </div>
+          <button type="submit" class="btn-primary full-width">
+            Salvar Nova Senha
+          </button>
+        </form>
+      </div>
+
+      <a href="index.html" class="back-link"
+        ><i class="fa-solid fa-arrow-left"></i> Voltar para Login</a
+      >
+    </div>
+
+    <script type="module" src="js/reset.js"></script>
+  </body>
+</html>

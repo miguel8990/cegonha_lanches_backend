@@ -1,4 +1,4 @@
-from flask import Flask
+from flask import Flask, send_from_directory
 from flask_cors import CORS
 from .errors import configure_errors
 from config import Config
@@ -27,18 +27,16 @@ def create_app():
     app.config["JWT_TOKEN_LOCATION"] = ["cookies"]
     app.config["JWT_ACCESS_COOKIE_NAME"] = "token"  # Garante o nome certo
     app.config["JWT_ACCESS_COOKIE_PATH"] = "/"
+    app.config["JWT_COOKIE_CSRF_PROTECT"] = False
 
     # 🔥 CORREÇÃO DE COOKIES CROSS-ORIGIN
-    if is_production:
-        print("🌍 Modo Produção: SameSite=None, Secure=True (Cross-Origin Ativo)")
-        app.config["JWT_COOKIE_SECURE"] = True
-        app.config["JWT_COOKIE_SAMESITE"] = "None"  # Obrigatório para GitHub -> Render
-    else:
-        print("💻 Modo Dev: SameSite=Lax, Secure=False")
-        app.config["JWT_COOKIE_SECURE"] = False
-        app.config["JWT_COOKIE_SAMESITE"] = "Lax"
-
-    app.config["JWT_COOKIE_CSRF_PROTECT"] = False
+    # 🔥 CONFIGURAÇÃO PERFEITA (Funciona Local e Produção igual)
+    # Como é o mesmo domínio, não precisamos de 'None'. 'Lax' é mais seguro e compatível.
+    app.config["JWT_COOKIE_SAMESITE"] = "Lax"
+    
+    # Secure só precisa ser True se estiver em HTTPS (Produção)
+    app.config["JWT_COOKIE_SECURE"] = is_production
+    
 
 
 
@@ -116,5 +114,17 @@ def create_app():
 
     configure_errors(app)
     socketio.init_app(app, cors_allowed_origins="*", message_queue=redis_url)
+
+    @app.route('/')
+    def serve_index():
+        return send_from_directory(app.static_folder, 'index.html')
+
+    # Rota para outras páginas HTML (ex: login.html, reset.html) se existirem na raiz
+    @app.route('/<path:path>')
+    def serve_static_pages(path):
+        return send_from_directory(app.static_folder, path)
+
+    return app
+
 
     return app

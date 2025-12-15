@@ -1,0 +1,972 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Painel Admin | Cegonha</title>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css"
+    />
+    <link rel="stylesheet" href="css/style.css" />
+    <link rel="shortcut icon" href="assets/favicon.webp" type="image/webp" />
+    <link rel="stylesheet" href="css/admin.css" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.4/socket.io.min.js"></script>
+  </head>
+  <body>
+    <nav class="sidebar">
+      <div class="admin-logo"><i class="fa-solid fa-user-gear"></i> Painel</div>
+      <div class="sidebar-menu">
+        <button class="active" onclick="switchPanel('kitchen')">
+          <i class="fa-solid fa-fire-burner"></i> Pedidos
+        </button>
+        <button class="active" onclick="switchPanel('orders')">
+          <i class="fa-solid fa-receipt"></i> Historico
+        </button>
+        <button onclick="switchPanel('menu')">
+          <i class="fa-solid fa-burger"></i> Cardápio
+        </button>
+        <button onclick="switchPanel('chat')">
+          <i class="fa-regular fa-comments"></i> Chat
+        </button>
+        <button onclick="switchPanel('config'); switchConfigTab('coupons')">
+          <i class="fa-solid fa-sliders"></i> Configurações
+        </button>
+        <button onclick="switchPanel('delivery')">
+          <i class="fa-solid fa-motorcycle"></i> Entrega
+        </button>
+        <button onclick="switchPanel('reports')">
+          <i class="fa-solid fa-chart-line"></i> Relatórios
+        </button>
+        <button class="logout-btn" onclick="adminLogout()">
+          <i class="fa-solid fa-right-from-bracket"></i> Sair
+        </button>
+      </div>
+    </nav>
+
+    <main class="main-content">
+      <section id="panel-kitchen" class="panel-section active">
+        <div class="header-section">
+          <h2>Fila de Produção</h2>
+          <button class="btn-outline" onclick="carregarCozinha()">
+            <i class="fa-solid fa-rotate"></i>
+          </button>
+        </div>
+
+        <div class="kitchen-container">
+          <div class="kitchen-column">
+            <div class="kitchen-header header-espera">
+              <i class="fa-regular fa-clock"></i> Aguardando Confirmação
+            </div>
+            <div id="queue-waiting" class="kitchen-list"></div>
+          </div>
+
+          <div class="kitchen-column">
+            <div class="kitchen-header header-preparo">
+              <i class="fa-solid fa-fire"></i> Em Preparo
+            </div>
+            <div id="queue-prep" class="kitchen-list"></div>
+          </div>
+          <div class="kitchen-column">
+            <div class="kitchen-header header-entrega">
+              <i class="fa-solid fa-motorcycle"></i> Em Entrega
+            </div>
+            <div id="queue-delivery" class="kitchen-list"></div>
+          </div>
+        </div>
+      </section>
+      <section id="panel-orders" class="panel-section">
+        <div class="header-section">
+          <h2>Histórico de Pedidos</h2>
+          <div style="display: flex; gap: 10px">
+            <button class="btn-primary btn-small" onclick="abrirModalFiltro()">
+              <i class="fa-solid fa-filter"></i> Filtrar
+            </button>
+            <button
+              class="btn-outline btn-small"
+              onclick="carregarPedidosAdmin()"
+            >
+              <i class="fa-solid fa-rotate"></i> Atualizar
+            </button>
+          </div>
+        </div>
+        <div id="admin-orders-list" class="orders-grid">
+          <p>Selecione um filtro ou clique em atualizar.</p>
+        </div>
+      </section>
+
+      <section id="panel-menu" class="panel-section">
+        <div class="header-section">
+          <h2>Gerenciar Cardápio</h2>
+          <button class="btn-primary" onclick="openProductModal()">
+            + Novo Produto
+          </button>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Nome</th>
+              <th>Preço</th>
+              <th>Disponível</th>
+              <th>Ações</th>
+            </tr>
+          </thead>
+          <tbody id="admin-menu-list"></tbody>
+        </table>
+      </section>
+
+      <section id="panel-chat" class="panel-section">
+        <div class="header-section">
+          <h2>Atendimento ao Cliente</h2>
+          <button class="btn-outline" onclick="carregarListaConversas()">
+            <i class="fa-solid fa-rotate"></i> Atualizar Lista
+          </button>
+        </div>
+
+        <div class="chat-layout">
+          <div id="chat-users-list" class="chat-sidebar-list">
+            <p style="padding: 20px; color: #666">Carregando...</p>
+          </div>
+
+          <div class="chat-window">
+            <div id="admin-chat-messages" class="chat-messages-container">
+              <div style="text-align: center; margin-top: 50px; color: #555">
+                <i
+                  class="fa-regular fa-comments"
+                  style="font-size: 3rem; margin-bottom: 10px"
+                ></i>
+                <p>Selecione um cliente para iniciar o atendimento.</p>
+              </div>
+            </div>
+
+            <div
+              id="admin-chat-input-area"
+              class="chat-input-area"
+              style="display: none"
+            >
+              <input
+                type="text"
+                id="admin-chat-input"
+                placeholder="Digite sua resposta..."
+                onkeypress="handleAdminChatKey(event)"
+              />
+              <button class="btn-primary" onclick="enviarRespostaAdmin()">
+                <i class="fa-solid fa-paper-plane"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+      <section id="panel-reports" class="panel-section">
+        <div class="header-section">
+          <h2>Painel Financeiro</h2>
+          <div style="display: flex; gap: 10px">
+            <button
+              class="btn-primary btn-small"
+              onclick="aplicarFiltroRelatorio()"
+            >
+              Gerar Relatório
+            </button>
+            <button
+              class="btn-primary btn-small"
+              onclick="abrirModalFiltroRelatorio()"
+            >
+              <i class="fa-solid fa-filter"></i> Filtrar
+            </button>
+            <button class="btn-outline btn-small" onclick="carregarDashboard()">
+              <i class="fa-solid fa-rotate"></i> Atualizar
+            </button>
+          </div>
+        </div>
+
+        <p id="report-period-label" style="color: #666; margin-bottom: 15px">
+          Mostrando últimos 30 dias
+        </p>
+
+        <div style="display: flex; gap: 20px; margin-bottom: 30px">
+          <div
+            class="admin-order-card"
+            style="flex: 1; text-align: center; padding: 20px"
+          >
+            <h3 style="color: #aaa; font-size: 1rem">Faturamento (R$)</h3>
+            <div
+              id="stat-faturamento"
+              style="
+                font-size: 2rem;
+                color: var(--color-gold);
+                font-weight: bold;
+              "
+            >
+              R$ 0,00
+            </div>
+          </div>
+          <div
+            class="admin-order-card"
+            style="flex: 1; text-align: center; padding: 20px"
+          >
+            <h3 style="color: #aaa; font-size: 1rem">Pedidos Concluídos</h3>
+            <div
+              id="stat-qtd"
+              style="font-size: 2rem; color: #2ecc71; font-weight: bold"
+            >
+              0
+            </div>
+          </div>
+        </div>
+
+        <div class="admin-order-card" style="padding: 20px">
+          <canvas id="salesChart" style="width: 100%; height: 300px"></canvas>
+        </div>
+      </section>
+
+      <div id="modal-dossier" class="modal-overlay" style="z-index: 6000">
+        <div class="modal-content auth-content" style="max-width: 600px">
+          <div class="header-section">
+            <h3 style="color: white; margin: 0">
+              <i class="fa-solid fa-magnifying-glass"></i> Dossiê do Pedido
+            </h3>
+            <button
+              class="close-modal"
+              style="position: static"
+              onclick="fecharDossie()"
+            >
+              &times;
+            </button>
+          </div>
+          <div
+            id="dossier-body"
+            class="modal-body"
+            style="font-family: monospace; color: #ccc; line-height: 1.4"
+          ></div>
+          <div class="modal-footer">
+            <button class="btn-primary full-width" onclick="window.print()">
+              Imprimir Prova
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <section id="panel-delivery" class="panel-section">
+        <div class="header-section">
+          <h2>Taxas de Entrega</h2>
+          <div style="display: flex; gap: 10px">
+            <input
+              type="text"
+              id="new-bairro-name"
+              placeholder="Nome do Bairro"
+              style="
+                padding: 8px;
+                border-radius: 4px;
+                border: 1px solid #444;
+                background: #222;
+                color: white;
+              "
+            />
+            <input
+              type="number"
+              id="new-bairro-price"
+              placeholder="R$ Taxa"
+              step="0.50"
+              style="
+                width: 100px;
+                padding: 8px;
+                border-radius: 4px;
+                border: 1px solid #444;
+                background: #222;
+                color: white;
+              "
+            />
+            <button class="btn-primary" onclick="adicionarBairro()">
+              + Adicionar
+            </button>
+          </div>
+        </div>
+        <div id="delivery-list" class="grid-list"></div>
+      </section>
+
+      <section id="panel-config" class="panel-section">
+        <div class="header-section">
+          <h2>Configurações do Sistema</h2>
+        </div>
+
+        <div class="config-tabs">
+          <button
+            class="config-tab-btn active"
+            onclick="switchConfigTab('coupons')"
+          >
+            <i class="fa-solid fa-ticket"></i> Cupons
+          </button>
+          <button class="config-tab-btn" onclick="switchConfigTab('users')">
+            <i class="fa-solid fa-users"></i> Usuários
+          </button>
+          <button class="config-tab-btn" onclick="switchConfigTab('schedule')">
+            <i class="fa-solid fa-clock"></i> Horários
+          </button>
+        </div>
+
+        <div class="config-content">
+          <div id="config-coupons" class="config-subpanel active">
+            <div class="subpanel-header">
+              <h3>Gerenciar Cupons de Desconto</h3>
+              <button
+                class="btn-primary btn-small"
+                onclick="toggleNewCouponForm()"
+              >
+                + Criar Cupom
+              </button>
+            </div>
+
+            <form
+              id="form-new-coupon"
+              style="
+                display: none;
+                background: #222;
+                padding: 15px;
+                margin-bottom: 20px;
+                border-radius: 8px;
+                border: 1px solid #444;
+              "
+            >
+              <div class="form-row">
+                <div class="form-group" style="flex: 1">
+                  <label>Código (Ex: PROMO10)</label>
+                  <input
+                    type="text"
+                    id="cupom-code"
+                    required
+                    style="text-transform: uppercase"
+                  />
+                </div>
+                <div class="form-group" style="flex: 1">
+                  <label>Lim. Usos (Vazio = Infinito)</label>
+                  <input type="number" id="cupom-limit" />
+                </div>
+              </div>
+              <div class="form-row">
+                <div class="form-group" style="flex: 1">
+                  <label>Desconto %</label>
+                  <input type="number" id="cupom-percent" placeholder="0" />
+                </div>
+                <div class="form-group" style="flex: 1">
+                  <label>Desconto Fixo (R$)</label>
+                  <input
+                    type="number"
+                    id="cupom-fixed"
+                    placeholder="0.00"
+                    step="0.01"
+                  />
+                </div>
+              </div>
+              <div class="form-group">
+                <label>Mínimo do Pedido (R$)</label>
+                <input
+                  type="number"
+                  id="cupom-min"
+                  placeholder="0.00"
+                  step="0.01"
+                />
+              </div>
+              <button type="submit" class="btn-primary full-width">
+                Salvar Cupom
+              </button>
+            </form>
+
+            <div id="coupons-list" class="grid-list">
+              <p>Carregando...</p>
+            </div>
+          </div>
+
+          <div id="config-users" class="config-subpanel" style="display: none">
+            <div class="subpanel-header">
+              <h3>Base de Usuários</h3>
+              <button
+                class="btn-outline btn-small"
+                onclick="carregarUsuariosAdmin()"
+              >
+                Atualizar
+              </button>
+            </div>
+            <div class="table-responsive">
+              <table class="admin-table">
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>Nome</th>
+                    <th>WhatsApp</th>
+                    <th>Pedidos</th>
+                  </tr>
+                </thead>
+                <tbody id="users-list-body"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div
+            id="config-schedule"
+            class="config-subpanel"
+            style="display: none"
+          >
+            <div class="subpanel-header">
+              <h3>Horário de Funcionamento</h3>
+              <button class="btn-primary btn-small" onclick="salvarHorarios()">
+                Salvar Alterações
+              </button>
+            </div>
+
+            <div class="table-responsive">
+              <table class="admin-table">
+                <thead>
+                  <tr>
+                    <th>Dia</th>
+                    <th>Abertura</th>
+                    <th>Fechamento</th>
+                    <th>Fechado?</th>
+                  </tr>
+                </thead>
+                <tbody id="schedule-list-body"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <div id="toast-container"></div>
+
+    <div id="modal-product-admin" class="modal-overlay">
+      <div class="modal-content auth-content" style="max-width: 500px">
+        <div class="header-section" style="margin-bottom: 20px">
+          <h3 style="color: white; margin: 0">Novo Produto</h3>
+          <button
+            class="close-modal"
+            style="position: static"
+            onclick="closeProductModal()"
+          >
+            &times;
+          </button>
+        </div>
+
+        <div class="modal-body">
+          <form id="form-add-product">
+            <div class="form-group" style="text-align: center">
+              <div
+                id="preview-container"
+                style="
+                  width: 120px;
+                  height: 120px;
+                  background: #333;
+                  border-radius: 8px;
+                  margin: 0 auto 10px;
+                  overflow: hidden;
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                "
+              >
+                <i
+                  class="fa-solid fa-image"
+                  style="font-size: 2rem; color: #555"
+                  id="preview-icon"
+                ></i>
+                <img
+                  id="preview-img"
+                  src=""
+                  style="
+                    width: 100%;
+                    height: 100%;
+                    object-fit: cover;
+                    display: none;
+                  "
+                />
+              </div>
+
+              <input
+                type="file"
+                id="prod-file"
+                accept="image/*"
+                style="display: none"
+              />
+              <input type="hidden" id="prod-image-url" />
+
+              <div
+                style="
+                  display: flex;
+                  gap: 15px;
+                  justify-content: center;
+                  align-items: center;
+                  margin-top: 15px;
+                "
+              >
+                <button
+                  type="button"
+                  id="btn-upload-pc"
+                  class="btn-upload-padrao"
+                  onclick="document.getElementById('prod-file').click()"
+                  title="Enviar do computador"
+                >
+                  <i class="fa-solid fa-cloud-arrow-up"></i>
+                  <span>Upload PC</span>
+                </button>
+
+                <button
+                  type="button"
+                  class="btn-upload-padrao"
+                  onclick="abrirGaleriaNuvem()"
+                  title="Escolher imagem já enviada"
+                >
+                  <i class="fa-solid fa-images"></i>
+                  <span>Nuvem</span>
+                </button>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group" style="flex: 2">
+                <label>Nome</label>
+                <input
+                  type="text"
+                  id="prod-name"
+                  required
+                  placeholder="Ex: Super Bacon"
+                />
+              </div>
+              <div class="form-group" style="flex: 1">
+                <label>Preço (R$)</label>
+                <input
+                  type="number"
+                  id="prod-price"
+                  step="0.01"
+                  required
+                  placeholder="0.00"
+                />
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group" style="flex: 1">
+                <label>Categoria</label>
+                <select
+                  id="prod-category"
+                  style="
+                    width: 100%;
+                    padding: 10px;
+                    background: #111;
+                    border: 1px solid #444;
+                    color: #fff;
+                    border-radius: 5px;
+                  "
+                >
+                  <option value="Lanche">Lanche</option>
+                  <option value="Combo">Combo</option>
+                  <option value="Bebida">Bebida</option>
+                </select>
+              </div>
+              <div class="form-group" style="flex: 1">
+                <label>Estoque (Opcional)</label>
+                <input
+                  type="number"
+                  id="prod-stock"
+                  placeholder="Vazio = Infinito"
+                  style="
+                    width: 100%;
+                    padding: 10px;
+                    background: #111;
+                    border: 1px solid #444;
+                    color: white;
+                    border-radius: 5px;
+                  "
+                />
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label>Descrição</label>
+              <textarea
+                id="prod-desc"
+                rows="2"
+                placeholder="Ingredientes..."
+              ></textarea>
+            </div>
+
+            <div
+              class="form-group"
+              style="
+                border-top: 1px solid #333;
+                padding-top: 15px;
+                margin-top: 15px;
+              "
+            >
+              <label
+                style="
+                  color: var(--color-gold);
+                  display: flex;
+                  justify-content: space-between;
+                  align-items: center;
+                "
+              >
+                Personalização / Opções
+                <button
+                  type="button"
+                  class="btn-small"
+                  onclick="addDetailRow()"
+                  style="background: #333; color: white"
+                >
+                  + Adicionar
+                </button>
+              </label>
+
+              <div style="font-size: 0.8rem; color: #666; margin-bottom: 10px">
+                Formato: <i>Nome do item</i> ou <i>Nome - Preço</i> (Ex: Bacon -
+                3.00)
+              </div>
+
+              <div
+                id="details-container"
+                style="display: flex; flex-direction: column; gap: 10px"
+              ></div>
+            </div>
+
+            <button
+              type="submit"
+              class="btn-primary full-width"
+              style="margin-top: 15px"
+            >
+              Cadastrar Produto
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <div id="modal-security" class="modal-overlay" style="z-index: 4000">
+      <div
+        class="modal-content auth-content"
+        style="max-width: 400px; height: auto; min-height: auto"
+      >
+        <div
+          class="header-section"
+          style="
+            margin-bottom: 15px;
+            border-bottom: 1px solid #333;
+            padding-bottom: 10px;
+          "
+        >
+          <h3 style="color: #e74c3c; margin: 0">
+            <i class="fa-solid fa-triangle-exclamation"></i> Ação Crítica
+          </h3>
+          <button
+            class="close-modal"
+            style="position: static"
+            onclick="closeSecurityModal()"
+          >
+            &times;
+          </button>
+        </div>
+
+        <div class="modal-body">
+          <p style="color: #ccc; margin-bottom: 15px; font-size: 0.95rem">
+            Você está prestes a excluir um produto permanentemente. Para
+            confirmar, digite a <strong>Senha Mestra</strong>:
+          </p>
+          <input
+            type="password"
+            id="security-pass"
+            placeholder="Senha de segurança"
+            style="
+              width: 100%;
+              padding: 12px;
+              background: #111;
+              border: 1px solid #444;
+              color: white;
+              border-radius: 5px;
+              font-size: 1rem;
+            "
+          />
+        </div>
+
+        <div class="modal-footer" style="justify-content: flex-end; gap: 10px">
+          <button class="btn-outline" onclick="closeSecurityModal()">
+            Cancelar
+          </button>
+          <button
+            class="btn-primary"
+            style="background-color: #e74c3c; border-color: #e74c3c"
+            onclick="executarDelecao()"
+          >
+            <i class="fa-solid fa-trash"></i> Excluir Agora
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div id="modal-cloud-gallery" class="modal-overlay" style="z-index: 5000">
+      <div
+        class="modal-content auth-content"
+        style="max-width: 700px; height: 80vh"
+      >
+        <div class="header-section">
+          <h3 style="color: white; margin: 0">Galeria na Nuvem</h3>
+          <button
+            class="close-modal"
+            style="position: static"
+            onclick="fecharGaleriaNuvem()"
+          >
+            &times;
+          </button>
+        </div>
+
+        <div class="modal-body" style="background: #222; padding: 10px">
+          <p style="color: #aaa; font-size: 0.9rem; margin-bottom: 10px">
+            Clique em uma imagem para selecioná-la.
+          </p>
+          <div id="cloud-grid" class="gallery-grid"></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="modal-filter-orders" class="modal-overlay" style="z-index: 4500">
+      <div class="modal-content auth-content" style="max-width: 500px">
+        <div class="header-section">
+          <h3 style="color: white; margin: 0">Filtrar Pedidos</h3>
+          <button
+            class="close-modal"
+            style="position: static"
+            onclick="fecharModalFiltro()"
+          >
+            &times;
+          </button>
+        </div>
+
+        <div class="modal-body">
+          <div class="form-group">
+            <label>Período</label>
+            <select
+              id="filter-period"
+              style="
+                width: 100%;
+                padding: 10px;
+                background: #111;
+                border: 1px solid #444;
+                color: white;
+                border-radius: 5px;
+              "
+              onchange="toggleDatasManuais()"
+            >
+              <option value="hoje" selected>Hoje</option>
+              <option value="mes">Este Mês</option>
+              <option value="ano">Este Ano</option>
+              <option value="todos">Todo o Histórico</option>
+              <option value="manual">Personalizado (Datas)</option>
+            </select>
+          </div>
+
+          <div
+            id="filter-dates-row"
+            class="form-row"
+            style="display: none; margin-top: 10px"
+          >
+            <div class="form-group" style="flex: 1">
+              <label>De:</label>
+              <input
+                type="date"
+                id="filter-start"
+                style="
+                  padding: 8px;
+                  background: #222;
+                  border: 1px solid #444;
+                  color: white;
+                  width: 100%;
+                "
+              />
+            </div>
+            <div class="form-group" style="flex: 1">
+              <label>Até:</label>
+              <input
+                type="date"
+                id="filter-end"
+                style="
+                  padding: 8px;
+                  background: #222;
+                  border: 1px solid #444;
+                  color: white;
+                  width: 100%;
+                "
+              />
+            </div>
+          </div>
+
+          <hr style="border-color: #333; margin: 20px 0" />
+
+          <div class="form-group">
+            <label>Nome do Cliente</label>
+            <input
+              type="text"
+              id="filter-name"
+              placeholder="Ex: João"
+              style="
+                width: 100%;
+                padding: 10px;
+                background: #111;
+                border: 1px solid #444;
+                color: white;
+              "
+            />
+          </div>
+
+          <div class="form-row">
+            <div class="form-group" style="flex: 1">
+              <label>Método Pagamento</label>
+              <select
+                id="filter-payment"
+                style="
+                  width: 100%;
+                  padding: 10px;
+                  background: #111;
+                  border: 1px solid #444;
+                  color: white;
+                "
+              >
+                <option value="">Todos</option>
+                <option value="pix">Pix</option>
+                <option value="credit_card">Cartão de Crédito</option>
+                <option value="debit_card">Cartão de Débito</option>
+                <option value="cash">Dinheiro</option>
+                <option value="mercadopago">Mercado Pago</option>
+              </select>
+            </div>
+            <div class="form-group" style="flex: 1">
+              <label>ID do Pedido</label>
+              <input
+                type="number"
+                id="filter-id"
+                placeholder="Ex: 50"
+                style="
+                  width: 100%;
+                  padding: 10px;
+                  background: #111;
+                  border: 1px solid #444;
+                  color: white;
+                "
+              />
+            </div>
+          </div>
+
+          <button class="btn-primary full-width" onclick="aplicarFiltros()">
+            Aplicar Filtros
+          </button>
+          <button
+            class="btn-outline full-width"
+            style="margin-top: 10px"
+            onclick="limparFiltros()"
+          >
+            Limpar Filtros
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div id="modal-filter-reports" class="modal-overlay" style="z-index: 4600">
+      <div class="modal-content auth-content" style="max-width: 400px">
+        <div class="header-section">
+          <h3 style="color: white; margin: 0">Filtrar Relatório</h3>
+          <button
+            class="close-modal"
+            style="position: static"
+            onclick="fecharModalFiltroRelatorio()"
+          >
+            &times;
+          </button>
+        </div>
+
+        <div class="modal-body">
+          <div class="form-group">
+            <label>Período</label>
+            <select
+              id="rep-period"
+              style="
+                width: 100%;
+                padding: 10px;
+                background: #111;
+                border: 1px solid #444;
+                color: white;
+                border-radius: 5px;
+              "
+              onchange="toggleDatasRelatorio()"
+            >
+              <option value="hoje" selected>Hoje</option>
+              <option value="semana">Esta Semana</option>
+              <option value="mes">Este Mês</option>
+              <option value="manual">Personalizado</option>
+            </select>
+          </div>
+
+          <div
+            id="rep-dates-row"
+            class="form-row"
+            style="display: none; margin-top: 10px"
+          >
+            <div class="form-group" style="flex: 1">
+              <label>De:</label>
+              <input
+                type="date"
+                id="rep-start"
+                style="
+                  padding: 8px;
+                  background: #222;
+                  border: 1px solid #444;
+                  color: white;
+                  width: 100%;
+                "
+              />
+            </div>
+            <div class="form-group" style="flex: 1">
+              <label>Até:</label>
+              <input
+                type="date"
+                id="rep-end"
+                style="
+                  padding: 8px;
+                  background: #222;
+                  border: 1px solid #444;
+                  color: white;
+                  width: 100%;
+                "
+              />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Método Pagamento</label>
+            <select
+              id="rep-payment"
+              style="
+                width: 100%;
+                padding: 10px;
+                background: #111;
+                border: 1px solid #444;
+                color: white;
+              "
+            >
+              <option value="">Todos</option>
+              <option value="pix">Pix</option>
+              <option value="credit_card">Cartão de Crédito</option>
+              <option value="debit_card">Cartão de Débito</option>
+              <option value="cash">Dinheiro</option>
+              <option value="mercadopago">Mercado Pago</option>
+            </select>
+          </div>
+
+          <button
+            class="btn-primary full-width"
+            onclick="aplicarFiltroRelatorio()"
+          >
+            Gerar Relatório
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <script type="module" src="js/admin.js"></script>
+  </body>
+</html>

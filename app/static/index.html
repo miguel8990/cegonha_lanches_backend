@@ -1,0 +1,1252 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Cegonha Lanches | Hamburgueria e Restaurante em Itapagipe</title>
+    <meta
+      name="description"
+      content="Procurando o melhor hambúrguer em Itapagipe? No Cegonha Lanches você encontra lanches artesanais, combos e ambiente de restaurante para sua família. Peça já!"
+    />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css"
+    />
+    <link rel="stylesheet" href="css/style.css" />
+    <link rel="shortcut icon" href="assets/favicon.webp" type="image/webp" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.4/socket.io.min.js"></script>
+    <meta name="theme-color" content="#d93025" />
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+  </head>
+
+  <body>
+    <div id="toast-container"></div>
+    <header id="main-header">
+      <div class="container">
+        <div class="container-titulo">
+          <a href="./index.html" class="logo">
+            <img src="assets/logo2.webp" alt="Cegonha Lanches" />
+          </a>
+          <div class="brand-wrapper">
+            <a href="#" class="logo-text"
+              >Cegonha<span class="highlight">Lanches</span></a
+            >
+            <div id="status-funcionamento" class="status-box">
+              <span class="status-dot"></span>
+              <span class="status-text">Verificando...</span>
+            </div>
+          </div>
+        </div>
+
+        <nav class="nav-right">
+          <ul class="nav-links">
+            <li><a href="#hero">Início</a></li>
+            <li><a href="#menu">Cardápio</a></li>
+            <li><a href="#combos">Combos</a></li>
+            <li><a href="#contact">Contato</a></li>
+            <li><a href="#about">Sobre Nós</a></li>
+          </ul>
+
+          <div class="header-actions">
+            <button
+              id="btn-open-login"
+              class="btn-login-header"
+              onclick="openAuthModal()"
+            >
+              <i class="fa-regular fa-user"></i> <span>Entrar</span>
+            </button>
+
+            <div
+              id="user-profile-area"
+              class="profile-container"
+              style="display: none"
+            >
+              <div class="profile-icon" onclick="toggleProfileMenu()">
+                <i class="fa-solid fa-user"></i>
+              </div>
+              <div id="profile-menu" class="profile-menu">
+                <span id="user-name-display">Usuário</span>
+                <hr />
+                <a href="#" onclick="openAccountModal()"
+                  ><i class="fa-solid fa-user-pen"></i> Minha Conta</a
+                >
+                <a href="#" onclick="openAddressesModal()"
+                  ><i class="fa-solid fa-map-location-dot"></i> Meus
+                  Endereços</a
+                >
+                <a href="#" onclick="abrirHistoricoPedidos()"
+                  ><i class="fa-solid fa-list-ul"></i> Meus Pedidos</a
+                >
+                <a
+                  id="admin-link"
+                  href="admin.html"
+                  target="_blank"
+                  style="display: none; color: var(--color-gold)"
+                >
+                  <i class="fa-solid fa-user-gear"></i> Painel Admin
+                </a>
+                <a href="#" onclick="logout()"
+                  ><i class="fa-solid fa-right-from-bracket"></i> Sair</a
+                >
+              </div>
+            </div>
+
+            <button id="cart-btn" class="cart-btn" onclick="toggleCart()">
+              <i class="fa-solid fa-cart-shopping"></i>
+              <span id="cart-count" class="cart-count">0</span>
+            </button>
+          </div>
+
+          <div class="hamburger" onclick="toggleMobileMenu()">
+            <span></span>
+            <span></span>
+            <span></span>
+          </div>
+        </nav>
+      </div>
+    </header>
+
+    <main>
+      <section id="hero">
+        <div class="hero-content">
+          <h1>Sabor <span class="text-red">Artesanal</span></h1>
+          <p
+            style="
+              color: rgb(251, 255, 0);
+              font-size: 1.1rem;
+              margin-bottom: 20px;
+            "
+          >
+            Descubra o verdadeiro sabor do hambúrguer feito com paixão.
+            Ingredientes selecionados e um ambiente que te abraça.
+          </p>
+          <div class="hero-buttons">
+            <a href="#menu" class="btn-primary">Ver Cardápio</a>
+          </div>
+        </div>
+        <div class="hero-image">
+          <img
+            src="assets/principal.jpg"
+            alt="Imagem da loja"
+            class="hero-img-real"
+            width="1024"
+            height="1024"
+          />
+        </div>
+      </section>
+      <br />
+      <section id="menu">
+        <div class="container">
+          <h2 class="section-title">
+            Nosso <span class="highlight">Cardápio</span>
+          </h2>
+          <div id="menu-grid" class="grid-container">
+            <div class="loading-spinner">Carregando delícias...</div>
+          </div>
+        </div>
+      </section>
+      <br />
+      <section id="combos">
+        <div class="container">
+          <h2 class="section-title">
+            Combos <span class="highlight">Imperdíveis</span>
+          </h2>
+
+          <div class="carousel">
+            <div class="loading-spinner">Carregando combos...</div>
+          </div>
+        </div>
+      </section>
+
+      <br />
+      <section id="bebidas" class="menu-section">
+        <div class="container">
+          <h2 class="section-title">
+            Bebidas <span class="text-red">Geladas</span> 🥤
+          </h2>
+
+          <div id="bebidas-grid" class="grid-container">
+            <div class="loading-spinner">Carregando bebidas...</div>
+          </div>
+        </div>
+      </section>
+
+      <section id="contact">
+        <div class="container">
+          <h2 class="section-title">
+            Finalize o <span class="highlight">Pedido</span>
+          </h2>
+          <div class="contact-wrapper">
+            <form id="contact-form" class="contact-form">
+              <div class="form-group">
+                <label for="name">Nome</label>
+                <input
+                  type="text"
+                  id="name"
+                  name="name"
+                  required
+                  placeholder="Seu nome"
+                />
+              </div>
+              <div class="form-group">
+                <label for="phone">WhatsApp</label>
+                <input
+                  type="tel"
+                  id="phone"
+                  name="phone"
+                  required
+                  placeholder="(00) 00000-0000"
+                />
+              </div>
+
+              <div class="address-section">
+                <h4
+                  style="
+                    color: var(--color-gold);
+                    margin-bottom: 10px;
+                    border-bottom: 1px solid #333;
+                    padding-bottom: 5px;
+                  "
+                >
+                  📍 Dados de Entrega
+                </h4>
+                <div class="form-row">
+                  <div class="form-group" style="flex: 3">
+                    <label for="address">Rua / Avenida</label>
+                    <input
+                      type="text"
+                      id="address"
+                      name="address"
+                      required
+                      placeholder="Ex: Av. Brasil"
+                    />
+                  </div>
+                  <div class="form-group" style="flex: 1">
+                    <label for="number">Nº</label>
+                    <input
+                      type="text"
+                      id="number"
+                      name="number"
+                      required
+                      placeholder="123"
+                    />
+                  </div>
+                </div>
+                <div class="form-row">
+                  <div class="form-group" style="flex: 1">
+                    <label for="bairro">Bairro</label>
+                    <select
+                      id="bairro"
+                      name="bairro"
+                      required
+                      style="
+                        width: 100%;
+                        padding: 12px;
+                        background-color: var(--color-black);
+                        border: 1px solid #444;
+                        border-radius: var(--border-radius);
+                        color: var(--color-text);
+                      "
+                    >
+                      <option value="" disabled selected>Selecione...</option>
+                    </select>
+                  </div>
+                  <div class="form-group" style="flex: 1">
+                    <label for="comp">Complemento</label>
+                    <input
+                      type="text"
+                      id="comp"
+                      name="comp"
+                      placeholder="Apto, Fundos..."
+                    />
+                  </div>
+                </div>
+                <div class="delivery-fee-container">
+                  <span class="delivery-fee-label"
+                    ><i class="fa-solid fa-motorcycle"></i> Taxa de
+                    Entrega:</span
+                  >
+                  <span id="delivery-fee-display">R$ 0,00</span>
+                </div>
+              </div>
+
+              <div class="form-group pickup-option">
+                <label class="checkbox-container">
+                  <input type="checkbox" id="retirada-check" />
+                  <span class="checkmark"></span>
+                  <span class="label-text">Retirada no local</span>
+                </label>
+              </div>
+              <div
+                class="payment-section"
+                style="margin-top: 20px; margin-bottom: 20px"
+              >
+                <h4
+                  style="
+                    color: var(--color-gold);
+                    margin-bottom: 10px;
+                    border-bottom: 1px solid #333;
+                    padding-bottom: 5px;
+                  "
+                >
+                  💳 Pagamento
+                </h4>
+
+                <div class="payment-options">
+                  <label class="payment-option">
+                    <input
+                      type="radio"
+                      name="paymentMethod"
+                      value="credit_card"
+                      checked
+                    />
+                    <span class="payment-box"
+                      ><i class="fa-regular fa-credit-card"></i> Cartão de
+                      Crédito</span
+                    >
+                  </label>
+
+                  <label class="payment-option">
+                    <input
+                      type="radio"
+                      name="paymentMethod"
+                      value="debit_card"
+                    />
+                    <span class="payment-box"
+                      ><i class="fa-solid fa-credit-card"></i> Cartão de
+                      Débito</span
+                    >
+                  </label>
+
+                  <label class="payment-option">
+                    <input type="radio" name="paymentMethod" value="pix" />
+                    <span class="payment-box"
+                      ><i class="fa-brands fa-pix"></i> Pix</span
+                    >
+                  </label>
+
+                  <label class="payment-option">
+                    <input
+                      type="radio"
+                      name="paymentMethod"
+                      value="cash"
+                      onchange="toggleTroco(this)"
+                    />
+                    <span class="payment-box"
+                      ><i class="fa-solid fa-money-bill-wave"></i>
+                      Dinheiro</span
+                    >
+                  </label>
+                  <!--
+                  <label class="payment-option">
+                    <input
+                      type="radio"
+                      name="paymentMethod"
+                      value="mercadopago"
+                    />
+                    <span
+                      class="payment-box"
+                      style="border-color: #009ee3; color: #009ee3"
+                    >
+                      <i class="fa-solid fa-hand-holding-dollar"></i> Pagar
+                      Online (MP)
+                    </span>
+                  </label>
+                  -->
+                </div>
+
+                <div
+                  id="troco-box"
+                  class="form-group"
+                  style="display: none; margin-top: 15px"
+                >
+                  <label>Precisa de troco para quanto?</label>
+                  <input type="text" id="troco-for" placeholder="Ex: 50,00" />
+                </div>
+              </div>
+              <div
+                class="coupons-section"
+                style="
+                  margin-top: 20px;
+                  border-top: 1px solid #333;
+                  padding-top: 15px;
+                "
+              >
+                <h4 style="color: var(--color-gold); margin-bottom: 15px">
+                  🎟️ Cupons de Desconto
+                </h4>
+
+                <div id="coupons-container" class="coupons-grid">
+                  <p style="color: #666; font-size: 0.9rem">
+                    Carregando ofertas...
+                  </p>
+                </div>
+
+                <div
+                  id="discount-display"
+                  style="
+                    display: none;
+                    margin-top: 10px;
+                    text-align: right;
+                    color: var(--color-gold);
+                  "
+                >
+                  Desconto aplicado:
+                  <span id="discount-value" style="font-weight: bold"
+                    >- R$ 0,00</span
+                  >
+                </div>
+              </div>
+              <br />
+              <div class="form-group">
+                <label for="message">Mensagem / Observações</label>
+                <textarea
+                  id="message"
+                  name="message"
+                  rows="4"
+                  placeholder="Ex: Sem cebola, troco para 50..."
+                ></textarea>
+              </div>
+
+              <div style="display: flex; gap: 10px; margin-top: 20px">
+                <button
+                  id="btn-submit-sistema"
+                  type="submit"
+                  class="btn-primary"
+                  style="flex: 1"
+                >
+                  Fazer Pedido
+                </button>
+                <button
+                  id="btn-submit-whatsapp"
+                  type="submit"
+                  class="btn-whts"
+                  style="flex: 1"
+                >
+                  <i class="fa-brands fa-whatsapp"></i> WhatsApp
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </section>
+      <section id="contact">
+        <div class="contact-info-box">
+          <div class="info-item">
+            <div id="Texto-info">
+              <h3 class="info-title">Endereço</h3>
+              <p class="info-text">R. Helenice Felício de Morais, 765</p>
+              <p class="info-text">Itapagipe - MG</p>
+              <p class="info-text">CEP: 38240-000</p>
+            </div>
+          </div>
+          <div class="social-links">
+            <a
+              href="https://www.instagram.com/lanchescegonha/"
+              target="_blank"
+              class="social-icon"
+              ><i class="fa-brands fa-instagram"></i> Instagram</a
+            >
+            <a
+              href="https://wa.me/5534996537883"
+              target="_blank"
+              class="social-icon"
+              ><i class="fa-brands fa-whatsapp"></i> WhatsApp</a
+            >
+            <a
+              href="https://www.facebook.com/share/1Nt35Cf2nR/"
+              target="_blank"
+              class="social-icon"
+              ><i class="fa-brands fa-facebook"></i> Facebook</a
+            >
+          </div>
+        </div>
+      </section>
+      <br />
+      <section id="about">
+        <div class="container">
+          <div class="about-content">
+            <div class="about-text">
+              <h2 class="section-title">
+                Sobre o <span class="highlight">Cegonha</span>
+              </h2>
+              <p>
+                O Cegonha Lanches nasceu com um propósito simples: entregar
+                sabor, qualidade e aquele acolhimento que só uma boa lanchonete
+                consegue oferecer.
+              </p>
+              <br />
+              <p>
+                Nossa cozinha combina tradição e criatividade. Da chapa sempre
+                saem hambúrgueres suculentos, pães fresquinhos e combinações que
+                agradam todos os paladares. Com um ambiente descontraído, é o
+                lugar perfeito para reunir amigos.
+              </p>
+              <br />
+              <p>
+                Aqui, a missão é clara: fazer com que seu pedido chegue rápido,
+                quente e irresistível — do jeitinho que você merece.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <div class="container">
+        <div class="footer-content">
+          <div class="footer-col">
+            <h3>Cegonha <span class="highlight">Lanches</span></h3>
+            <p>
+              O verdadeiro sabor artesanal, feito com ingredientes selecionados
+              e muito carinho.
+            </p>
+          </div>
+
+          <div class="footer-col">
+            <h4>Navegação</h4>
+            <ul class="footer-links">
+              <li><a href="#hero">Início</a></li>
+              <li><a href="#menu">Cardápio</a></li>
+              <li><a href="#combos">Combos</a></li>
+              <li><a href="#contact">Fazer Pedido</a></li>
+            </ul>
+          </div>
+
+          <div class="footer-col">
+            <h4>Pagamento</h4>
+            <p>Aceitamos: Pix, Cartão de Crédito/Débito e Dinheiro.</p>
+            <div class="payment-icons">
+              <i class="fa-brands fa-pix"></i>
+              <i class="fa-brands fa-cc-mastercard"></i>
+              <i class="fa-brands fa-cc-visa"></i>
+              <i class="fa-solid fa-money-bill-wave"></i>
+            </div>
+          </div>
+        </div>
+
+        <div class="footer-bottom">
+          <p>&copy; 2024 Cegonha Lanches. Todos os direitos reservados.</p>
+          <p class="legal-text">
+            CNPJ: 48.034.432/0001-40 • R. Helenice Felício de Morais, 765,
+            Jardim América - Itapagipe/MG
+          </p>
+        </div>
+      </div>
+    </footer>
+
+    <div id="cart-sidebar" class="cart-sidebar">
+      <div class="cart-header">
+        <h3>Meu Pedido</h3>
+        <button class="close-cart" onclick="toggleCart()">&times;</button>
+      </div>
+      <div id="cart-items" class="cart-items-container">
+        <p class="empty-msg">Seu carrinho está vazio 🍔</p>
+      </div>
+      <div class="cart-footer">
+        <div class="cart-total">
+          <span>Total:</span>
+          <span id="cart-total-price">R$ 0,00</span>
+        </div>
+        <button
+          class="btn-primary"
+          style="width: 100%"
+          onclick="finalizarPedido()"
+        >
+          Fechar Pedido
+        </button>
+      </div>
+    </div>
+    <div id="cart-overlay" class="cart-overlay" onclick="toggleCart()"></div>
+
+    <div id="modal-auth" class="modal-overlay">
+      <div class="modal-content auth-content">
+        <button class="close-modal" onclick="closeAuthModal()">&times;</button>
+
+        <span class="close-modal" onclick="fecharModalAuth()">&times;</span>
+
+        <div style="text-align: center; margin-bottom: 20px">
+          <img src="assets/logo2.webp" alt="Logo" style="height: 60px" />
+        </div>
+
+        <div class="auth-tabs">
+          <button class="tab-btn active" onclick="switchAuthTab('acesso')">
+            Acesso Rápido
+          </button>
+          <button class="tab-btn" onclick="switchAuthTab('login')">
+            Login
+          </button>
+          <button class="tab-btn" onclick="switchAuthTab('register')">
+            Cadastro
+          </button>
+        </div>
+
+        <form
+          id="form-magic-login"
+          class="auth-form"
+          style="display: block; text-align: center"
+        >
+          <div style="text-align: center; margin-bottom: 20px">
+            <h3 style="color: var(--color-gold); margin-bottom: 10px">
+              Link Mágico
+            </h3>
+            <p style="color: #ccc; font-size: 0.9rem; line-height: 1.4">
+              Digite seu e-mail, enviaremos um link de confirmação.<br />
+              Verifique a <strong>caixa de entrada</strong> ou a
+              <strong>caixa de spam</strong>.
+            </p>
+          </div>
+
+          <div class="form-group" style="text-align: center">
+            <label>E-mail</label>
+            <div class="input-icon">
+              <i class="fa-solid fa-envelope"></i>
+              <input
+                type="email"
+                id="magic-email"
+                required
+                placeholder="seu@email.com"
+                style="width: 98%"
+              />
+            </div>
+          </div>
+
+          <button type="submit" class="btn-primary full-width">
+            Receber Link <i class="fa-solid fa-paper-plane"></i>
+          </button>
+        </form>
+
+        <form
+          id="form-password-login"
+          class="auth-form"
+          style="display: none; text-align: center"
+        >
+          <div style="text-align: center; margin-bottom: 20px">
+            <h3 style="color: var(--color-gold)">Entrar com Senha</h3>
+          </div>
+
+          <div class="form-group">
+            <label>E-mail</label>
+            <div class="input-icon">
+              <i class="fa-solid fa-envelope"></i>
+              <input
+                type="email"
+                id="login-email"
+                required
+                placeholder="seu@email.com"
+                style="width: 98%"
+              />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Senha</label>
+            <div class="input-icon">
+              <i class="fa-solid fa-lock"></i>
+              <input
+                type="password"
+                id="login-password"
+                required
+                placeholder="******"
+                style="width: 98%"
+              />
+            </div>
+          </div>
+
+          <button
+            type="submit"
+            class="btn-primary full-width"
+            style="width: 40%"
+          >
+            Entrar
+          </button>
+          <div class="auth-tabs"></div>
+
+          <div
+            style="display: flex; justify-content: center; margin-bottom: 20px"
+          >
+            <div id="google-btn-container"></div>
+          </div>
+          <div style="text-align: center; margin-top: 15px">
+            <a
+              href="#"
+              onclick="switchAuthTab('acesso')"
+              style="color: #888; font-size: 0.8rem"
+              >Esqueceu a senha? Use o Acesso Rápido.</a
+            >
+          </div>
+        </form>
+
+        <form
+          id="form-register"
+          class="auth-form"
+          style="display: none; text-align: center"
+        >
+          <div style="text-align: center; margin-bottom: 20px">
+            <h3 style="color: var(--color-gold)">Criar Conta</h3>
+          </div>
+
+          <div class="form-group">
+            <label>Nome Completo</label>
+            <input
+              type="text"
+              name="name"
+              required
+              placeholder="Ex: João Silva"
+              style="width: 98%"
+            />
+          </div>
+
+          <div class="form-group">
+            <label>E-mail</label>
+            <input
+              type="email"
+              name="email"
+              required
+              placeholder="seu@email.com"
+              style="width: 98%"
+            />
+          </div>
+
+          <div class="form-group">
+            <label>WhatsApp</label>
+            <input
+              style="width: 98%"
+              type="text"
+              name="whatsapp"
+              placeholder="(XX) XXXXX-XXXX"
+            />
+          </div>
+
+          <div class="form-group">
+            <label>Senha</label>
+            <input
+              type="password"
+              name="password"
+              required
+              placeholder="******"
+              style="width: 98%"
+              oninput="mostrarForcaSenha(this.value, 'reg-strength')"
+            />
+            <small id="reg-strength" class="password-strength"></small>
+          </div>
+
+          <button
+            type="submit"
+            class="btn-primary full-width"
+            style="width: 40%"
+          >
+            Cadastrar
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <div id="modal-account" class="modal-overlay">
+      <div class="modal-content auth-content" style="max-width: 400px">
+        <div
+          class="modal-header"
+          style="
+            height: auto;
+            background: transparent;
+            padding: 15px;
+            border-bottom: 1px solid #333;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+          "
+        >
+          <h3 style="color: white; margin: 0">Meus Dados</h3>
+          <button
+            class="close-modal"
+            style="position: static"
+            onclick="closeAccountModal()"
+          >
+            &times;
+          </button>
+        </div>
+        <div class="modal-body">
+          <form id="form-account">
+            <div class="form-group">
+              <label>Nome Completo</label
+              ><input type="text" id="acc-name" required />
+            </div>
+            <div class="form-group">
+              <label>Email</label
+              ><input
+                type="email"
+                id="acc-email"
+                readonly
+                style="opacity: 0.6; cursor: not-allowed"
+              />
+            </div>
+            <div class="form-group">
+              <label>WhatsApp</label
+              ><input type="tel" id="acc-whatsapp" maxlength="15" />
+            </div>
+
+            <div
+              style="
+                margin-top: 20px;
+                border-top: 1px solid #333;
+                padding-top: 15px;
+              "
+            >
+              <h4
+                style="
+                  color: var(--color-gold);
+                  margin-bottom: 10px;
+                  font-size: 0.9rem;
+                "
+              >
+                Alterar Segurança
+              </h4>
+
+              <div class="form-group">
+                <label>Nova Senha</label>
+                <input
+                  type="password"
+                  id="acc-password"
+                  placeholder="Deixe vazio para manter"
+                  oninput="mostrarForcaSenha(this.value, 'acc-strength')"
+                />
+                <small id="acc-strength" class="password-strength"></small>
+              </div>
+
+              <div class="form-group">
+                <label>Confirme a Nova Senha</label>
+                <input
+                  type="password"
+                  id="acc-password-confirm"
+                  placeholder="Digite novamente"
+                />
+              </div>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-outline" onclick="closeAccountModal()">
+            Cancelar
+          </button>
+          <button class="btn-primary" onclick="saveAccountDetails()">
+            Salvar
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div id="modal-addresses" class="modal-overlay">
+      <div class="modal-content auth-content" style="max-width: 600px">
+        <div
+          class="modal-header"
+          style="
+            height: auto;
+            background: transparent;
+            padding: 15px;
+            border-bottom: 1px solid #333;
+            display: flex;
+            justify-content: space-between;
+          "
+        >
+          <h3 style="color: white; margin: 0">Meus Endereços</h3>
+          <button
+            class="close-modal"
+            style="position: static"
+            onclick="closeAddressesModal()"
+          >
+            &times;
+          </button>
+        </div>
+        <div class="modal-body">
+          <div id="address-list-container" class="address-list"></div>
+          <button
+            class="btn-outline full-width"
+            id="btn-show-add-addr"
+            onclick="toggleAddAddressForm()"
+          >
+            + Adicionar Novo Endereço
+          </button>
+          <form
+            id="form-new-address"
+            style="
+              display: none;
+              margin-top: 20px;
+              border-top: 1px solid #333;
+              padding-top: 20px;
+            "
+          >
+            <div
+              style="
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 15px;
+              "
+            >
+              <h4 style="color: var(--color-gold); margin: 0">Novo Endereço</h4>
+              <small style="color: #666; font-size: 0.8rem"
+                >Preencha os dados abaixo</small
+              >
+            </div>
+
+            <div
+              class="form-row"
+              style="display: flex; gap: 10px; margin-bottom: 10px"
+            >
+              <div class="form-group" style="flex: 3">
+                <input
+                  type="text"
+                  id="new-street"
+                  placeholder="Rua / Avenida"
+                  required
+                  style="
+                    width: 100%;
+                    padding: 12px;
+                    background: var(--color-black);
+                    border: 1px solid #444;
+                    border-radius: 5px;
+                    color: white;
+                  "
+                />
+              </div>
+              <div class="form-group" style="flex: 1">
+                <input
+                  type="text"
+                  id="new-number"
+                  placeholder="Nº"
+                  required
+                  style="
+                    width: 100%;
+                    padding: 12px;
+                    background: var(--color-black);
+                    border: 1px solid #444;
+                    border-radius: 5px;
+                    color: white;
+                  "
+                />
+              </div>
+            </div>
+
+            <div
+              class="form-row"
+              style="display: flex; gap: 10px; margin-bottom: 15px"
+            >
+              <div class="form-group" style="flex: 1">
+                <select
+                  id="new-bairro-select"
+                  required
+                  style="
+                    width: 100%;
+                    height: 45px;
+                    padding: 0 12px;
+                    background-color: var(--color-black);
+                    border: 1px solid #444;
+                    border-radius: 5px;
+                    color: #aaa;
+                    cursor: pointer;
+                  "
+                >
+                  <option value="" disabled selected>
+                    Selecionar Bairro...
+                  </option>
+                </select>
+              </div>
+
+              <div class="form-group" style="flex: 1">
+                <input
+                  type="text"
+                  id="new-comp"
+                  placeholder="Complemento (Opc.)"
+                  style="
+                    width: 100%;
+                    height: 45px;
+                    padding: 12px;
+                    background: var(--color-black);
+                    border: 1px solid #444;
+                    border-radius: 5px;
+                    color: white;
+                  "
+                />
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              class="btn-primary full-width"
+              style="
+                height: 45px;
+                font-weight: bold;
+                text-transform: uppercase;
+                letter-spacing: 1px;
+              "
+            >
+              Salvar Endereço
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <div id="modal-orders" class="modal-overlay">
+      <div
+        class="modal-content"
+        style="
+          max-width: 600px;
+          max-height: 85vh;
+          display: flex;
+          flex-direction: column;
+        "
+      >
+        <div class="modal-header" style="flex-shrink: 0">
+          <h3 style="color: white; margin: 0">
+            <i class="fa-solid fa-list-ul" style="color: var(--color-gold)"></i>
+            Meus Pedidos
+          </h3>
+          <button
+            class="close-modal"
+            style="position: static"
+            onclick="fecharModalPedidos()"
+          >
+            &times;
+          </button>
+        </div>
+
+        <div class="modal-body">
+          <div id="orders-list-container" class="orders-list"></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="modal-personalizacao" class="modal-overlay">
+      <div class="modal-content">
+        <div class="modal-header">
+          <img id="modal-img" src="" alt="Lanche" />
+          <button class="close-modal" onclick="fecharModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+          <h3 id="modal-title">Nome</h3>
+          <p id="modal-desc">Descrição...</p>
+          <div id="modal-carnes-section">
+            <h4 class="modal-section-title">
+              Escolha sua Carne <span class="required-tag">Obrigatório</span>
+            </h4>
+            <div id="lista-carnes"></div>
+          </div>
+          <div id="modal-adicionais-section">
+            <h4 class="modal-section-title">
+              Adicionais <span class="optional-tag">Opcional</span>
+            </h4>
+            <div id="lista-adicionais"></div>
+          </div>
+          <div id="modal-acompanhamentos-section">
+            <h4 class="modal-section-title">
+              Acompanhamentos <span class="optional-tag">Opcional</span>
+            </h4>
+            <div id="lista-acompanhamentos"></div>
+          </div>
+
+          <div id="modal-bebidas-section">
+            <h4 class="modal-section-title">
+              Bebidas <span class="optional-tag">Opcional</span>
+            </h4>
+            <div id="lista-bebidas"></div>
+          </div>
+          <div class="form-group" style="margin-top: 20px">
+            <label>Observações:</label
+            ><textarea id="modal-obs" rows="2"></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <div class="price-box">
+            <span>Total:</span><span id="modal-total">R$ 0,00</span>
+          </div>
+          <button class="btn-primary" onclick="adicionarItemDoModal()">
+            Adicionar ao Pedido
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div id="modal-closed" class="modal-overlay" style="z-index: 5000">
+      <div
+        class="modal-content auth-content"
+        style="max-width: 400px; text-align: center; padding: 30px"
+      >
+        <div style="margin-bottom: 20px">
+          <i
+            class="fa-solid fa-store-slash"
+            style="font-size: 3rem; color: var(--color-red)"
+          ></i>
+        </div>
+        <h3 style="color: white; margin-bottom: 10px">Estamos Fechados!</h3>
+        <p style="color: #ccc; margin-bottom: 20px">
+          Nosso horário de funcionamento é de
+          <strong>18:30 às 22:30</strong> (exceto Domingos).
+        </p>
+        <p style="color: #aaa; font-size: 0.9rem; margin-bottom: 25px">
+          Você pode montar seu pedido, mas só conseguirá finalizar quando
+          abrirmos.
+        </p>
+        <button
+          class="btn-primary full-width"
+          onclick="document.getElementById('modal-closed').style.display='none'"
+        >
+          Entendi, vou aguardar
+        </button>
+      </div>
+    </div>
+
+    <script type="module" src="js/main.js"></script>
+    <div id="chat-widget" class="chat-widget minimized">
+      <div class="chat-header" onclick="toggleChat()">
+        <div class="chat-title">
+          <i class="fa-regular fa-comments"></i> Fale Conosco
+        </div>
+        <button class="chat-toggle-btn">
+          <i class="fa-solid fa-chevron-up" id="chat-icon"></i>
+        </button>
+      </div>
+
+      <div class="chat-body" id="chat-messages-area">
+        <p class="chat-welcome">Olá! Em que podemos ajudar?</p>
+      </div>
+
+      <div class="chat-footer">
+        <input
+          type="text"
+          id="chat-input"
+          placeholder="Digite sua mensagem..."
+          onkeypress="handleChatKey(event)"
+        />
+        <button onclick="enviarMensagemChat()">
+          <i class="fa-solid fa-paper-plane"></i>
+        </button>
+      </div>
+    </div>
+
+    <div id="modal-magic-link" class="modal-overlay" style="display: none">
+      <div class="modal-content magic-modal-box">
+        <span class="close-btn" onclick="fecharModalMagic()">&times;</span>
+
+        <div style="text-align: center; margin-bottom: 15px">
+          <i
+            class="fa-solid fa-envelope-open-text"
+            style="font-size: 3rem; color: var(--color-gold)"
+          ></i>
+        </div>
+
+        <h3 style="text-align: center; color: var(--color-gold)">
+          Link Enviado! 🚀
+        </h3>
+
+        <div class="magic-text-body">
+          <p>Enviamos um link de acesso mágico para o seu e-mail.</p>
+
+          <ul class="magic-text-body">
+            <li>
+              <span>✅</span>
+              <div>Verifique sua <strong>Caixa de Entrada</strong>.</div>
+            </li>
+            <li>
+              <span>⚠️</span>
+              <div>
+                Olhe também na pasta de <strong>Spam</strong> ou
+                <strong>Lixo Eletrônico</strong>.
+              </div>
+            </li>
+            <li>
+              <span>⏳</span>
+              <div>O link expira em 15 minutos.</div>
+            </li>
+          </ul>
+          <p style="font-size: 0.85rem; color: #888">
+            Basta clicar no botão "Entrar Agora" que está no e-mail e você será
+            logado automaticamente aqui.
+          </p>
+        </div>
+
+        <button class="btn-primary full-width" onclick="fecharModalMagic()">
+          Entendi, vou verificar!
+        </button>
+      </div>
+    </div>
+    <div id="modal-confirm-order" class="modal-overlay">
+      <div class="modal-content confirm-modal-content">
+        <div class="modal-header">
+          <h3 class="modal-title">Confirme seu Pedido 📝</h3>
+          <span class="close-modal-btn" onclick="fecharModalConfirmacao()"
+            >&times;</span
+          >
+        </div>
+
+        <div id="confirm-summary-body"></div>
+
+        <div class="modal-actions">
+          <button class="btn-cancel" onclick="fecharModalConfirmacao()">
+            Voltar e Editar
+          </button>
+          <button class="btn-confirm-final" onclick="enviarPedidoFinal()">
+            ✅ Confirmar e Enviar
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div
+      id="modal-cookie-error"
+      class="modal-overlay"
+      style="display: none; z-index: 9999"
+    >
+      <div
+        class="modal-content"
+        style="max-width: 450px; text-align: center; border: 2px solid #e74c3c"
+      >
+        <div style="font-size: 3rem; margin-bottom: 15px">🍪🚫</div>
+        <h2 style="color: #e74c3c">Cookies Bloqueados</h2>
+        <p style="color: #ccc; margin: 15px 0; line-height: 1.5">
+          Seu navegador está bloqueando <strong>Cookies de Terceiros</strong>.
+          Como nosso sistema é seguro (HttpOnly), precisamos dessa permissão
+          para manter você logado.
+        </p>
+
+        <div
+          style="
+            background: #222;
+            padding: 10px;
+            border-radius: 8px;
+            text-align: left;
+            font-size: 0.9rem;
+            color: #aaa;
+            margin-bottom: 20px;
+          "
+        >
+          <strong>Como resolver:</strong>
+          <ul style="margin-left: 20px; margin-top: 5px">
+            <li>
+              Desative o "Bloqueador de Rastreamento" ou "Escudo" do navegador
+              para este site.
+            </li>
+            <li>Ou permita cookies de terceiros nas configurações.</li>
+            <li>Tente usar o Google Chrome padrão (fora do modo anônimo).</li>
+          </ul>
+        </div>
+
+        <button
+          onclick="window.location.href='index.html'"
+          class="btn-primary full-width"
+        >
+          Entendi, vou tentar novamente
+        </button>
+      </div>
+    </div>
+  </body>
+</html>
