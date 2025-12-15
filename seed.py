@@ -1,6 +1,6 @@
 from app import create_app
 from app.extensions import db
-from app.models import Product, User
+from app.models import Product, User, ChatMessage, Address
 from werkzeug.security import generate_password_hash
 import json
 import os
@@ -48,12 +48,18 @@ def create_super_admin():
         # Busca TODOS os super admins (não apenas o primeiro)
         existing_supers = User.query.filter_by(role="super_admin").all()
 
+
         if existing_supers:
             count = 0
             for u in existing_supers:
                 # Opcional: Se quiser preservar o SEU super atual (pelo email), adicione um if aqui.
                 # Mas para garantir unicidade total, melhor apagar tudo e recriar.
                 print(f"   🗑️  Removendo antigo super: {u.email} (ID: {u.id})")
+
+                msgs_deleted = ChatMessage.query.filter_by(user_id=u.id).delete()
+                if msgs_deleted > 0:
+                    print(f"      ↳ 💬 {msgs_deleted} mensagens de chat removidas.")
+                Address.query.filter_by(user_id=u.id).delete()
                 db.session.delete(u)
                 count += 1
 

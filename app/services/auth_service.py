@@ -3,7 +3,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 import datetime
 import os
 import bleach
-
+import secrets
 from app.models import User, db
 from flask_jwt_extended import create_access_token, decode_token
 from app.services.email_services import send_verification_email, send_magic_link_email, send_reset_email
@@ -285,6 +285,7 @@ def login_with_google(token):
     google_data = response.json()
     meu_client_id = os.getenv('GOOGLE_CLIENT_ID')
 
+
     # 2. Segurança: Verifica se o token foi gerado para o SEU site
     if meu_client_id and google_data['aud'] != meu_client_id:
         raise ValueError("Token não pertence a este aplicativo.")
@@ -300,10 +301,12 @@ def login_with_google(token):
 
     if not user:
         # Se não existe, CRIA automaticamente
+
+        senha_aleatoria = secrets.token_urlsafe(16)
         user = User(
             name=name,
             email=email,
-            password_hash=None,  # Usuário Google não tem senha
+            password_hash=generate_password_hash(senha_aleatoria),  # Usuário Google não tem senha
             role='client',
             is_verified=True  # Email do Google já é verificado
         )

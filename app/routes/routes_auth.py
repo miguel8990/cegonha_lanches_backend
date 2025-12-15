@@ -240,8 +240,13 @@ def google_auth():
         # 2. Prepara os dados de resposta (JSON)
         # Inclui o TOKEN explicitamente para o celular salvar
         resp_data = {
-            "user": user.to_dict(),
-
+            "user": {
+                "id": user.id,
+                "name": user.name,
+                "email": user.email,
+                "role": user.role,
+                "whatsapp": user.whatsapp
+            }
         }
 
         # 3. Cria a resposta UMA ÚNICA VEZ
