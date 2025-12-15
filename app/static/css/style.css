@@ -2865,3 +2865,327 @@ ul.magic-text-body li span {
   gap: 15px;
   padding-bottom: 20px;
 }
+
+/* =============================================================================
+   MELHORIAS ESPECÍFICAS PARA MOBILE (ADD-ON)
+   Adicionado em: 2025-12-15
+   Objetivo: Refinar espaçamentos, fontes e layout em telas pequenas (<768px)
+============================================================================= */
+
+@media (max-width: 768px) {
+  /* --- AJUSTES GERAIS DE LAYOUT --- */
+  .container {
+    padding: 0 15px; /* Margem lateral menor para aproveitar a tela */
+  }
+
+  h1 {
+    font-size: 2rem; /* Título Hero menor para não quebrar */
+    margin-bottom: 1rem;
+  }
+
+  h2.section-title {
+    font-size: 1.6rem; /* Títulos de seção mais delicados */
+    margin-bottom: 2rem;
+  }
+
+  /* --- HERO SECTION MOBILE --- */
+  #hero {
+    padding-top: 80px; /* Menos espaço no topo */
+    min-height: auto; /* Altura automática para não ficar buracos */
+    padding-bottom: 30px;
+  }
+
+  .hero-img-real {
+    width: 65%; /* Imagem menor para não dominar a tela */
+    margin-bottom: 20px;
+  }
+
+  /* --- GRID DE PRODUTOS OTIMIZADO --- */
+  .grid-container,
+  .carousel {
+    /* No mobile, reduz o gap para caber mais conteúdo */
+    gap: 15px;
+    /* Garante que o card não fique gigante nem muito estreito */
+    grid-template-columns: repeat(auto-fill, minmax(100%, 1fr));
+  }
+
+  /* Se quiser 2 colunas no mobile (estilo iFood), descomente abaixo: */
+  /*
+  .grid-container {
+     grid-template-columns: repeat(2, 1fr);
+     gap: 10px;
+  }
+  .menu-info { padding: 10px; }
+  .menu-info h3 { font-size: 1rem; }
+  .btn-primary { padding: 8px 12px; font-size: 0.8rem; }
+  */
+
+  /* --- FORMULÁRIOS E CHECKOUT --- */
+  .contact-wrapper {
+    padding: 20px; /* Menos padding no card do formulário */
+  }
+
+  /* Força os campos que estão lado a lado (Rua/Numero) a ficarem um sobre o outro */
+  .form-row {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .form-group {
+    margin-bottom: 15px;
+    width: 100% !important; /* Força largura total */
+    flex: none !important;
+  }
+
+  .payment-options {
+    /* Garante 2 colunas nos botões de pagamento */
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  .payment-box {
+    padding: 10px; /* Botões mais compactos */
+    font-size: 0.85rem;
+  }
+
+  /* --- MODAIS FULL SCREEN NO MOBILE --- */
+  .modal-content {
+    max-width: 95%; /* Quase largura total */
+    max-height: 85vh; /* Evita que corte em telas pequenas */
+    margin: 10px auto;
+  }
+
+  /* Modal de Auth (Login) */
+  #modal-auth .modal-content {
+    max-width: 95%;
+  }
+
+  /* Modal de Carrinho (Sidebar) */
+  .cart-sidebar {
+    width: 100%; /* Ocupa a tela toda ao abrir */
+    right: -100%;
+  }
+
+  /* Botão de fechar carrinho maior para toque */
+  .close-cart {
+    width: 50px;
+    height: 50px;
+  }
+
+  /* --- ENDEREÇO E RODAPÉ --- */
+  #Texto-info {
+    padding: 20px 15px;
+    margin: 10px 0;
+  }
+
+  .footer-content {
+    text-align: center;
+    gap: 30px;
+  }
+
+  .social-links {
+    width: 100%;
+  }
+
+  .social-icon {
+    width: 100%; /* Botões sociais full width */
+    justify-content: center;
+  }
+
+  /* --- CHAT WIDGET MOBILE --- */
+  .chat-widget {
+    left: 10px;
+    right: 10px; /* Ocupa a largura (com margem) */
+    bottom: 10px;
+    width: auto; /* Remove largura fixa */
+    border-radius: 12px;
+  }
+
+  .chat-widget.minimized {
+    width: 60px; /* Vira apenas uma bolinha/botão */
+    height: 60px;
+    border-radius: 50%;
+    right: 20px;
+    left: auto; /* Fica na direita */
+    bottom: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+  }
+
+  /* Esconde o texto "Fale Conosco" quando minimizado no mobile */
+  .chat-widget.minimized .chat-title {
+    display: none;
+  }
+
+  /* Mostra apenas o ícone */
+  .chat-widget.minimized .chat-toggle-btn {
+    position: static;
+    font-size: 1.5rem;
+  }
+
+  /* --- AJUSTES DE TOAST (NOTIFICAÇÃO) --- */
+  #toast-container {
+    left: 10px;
+    right: 10px;
+    top: auto;
+    bottom: 80px; /* Aparece em baixo, acima do chat */
+    width: auto;
+  }
+
+  .toast {
+    max-width: 100%;
+    width: 100%;
+  }
+}
+
+/* =============================================================================
+   CHAT MOBILE ULTRA-RESPONSIVO (ADD-ON)
+   Transforma o chat em Tela Cheia no mobile para facilitar a digitação
+============================================================================= */
+
+@media (max-width: 768px) {
+  /* --- ESTADO 1: ABERTO (TELA CHEIA) --- */
+  .chat-widget:not(.minimized) {
+    position: fixed !important;
+    top: 0;
+    left: 0;
+    width: 100% !important;
+    height: 100% !important; /* Ocupa a tela toda */
+    max-height: 100vh; /* Garante que não ultrapasse a viewport */
+    border-radius: 0 !important; /* Remove cantos arredondados */
+    margin: 0;
+    z-index: 99999; /* Fica acima de TUDO, inclusive menus */
+    display: flex;
+    flex-direction: column;
+    animation: slideUpMobile 0.3s ease-out;
+  }
+
+  /* Animação de entrada vindo de baixo */
+  @keyframes slideUpMobile {
+    from {
+      transform: translateY(100%);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+
+  /* Cabeçalho maior para toque */
+  .chat-widget:not(.minimized) .chat-header {
+    height: 65px;
+    padding: 15px 20px;
+    border-radius: 0;
+    /* Ajuste para entalhes (notch) de iPhones */
+    padding-top: env(safe-area-inset-top, 15px);
+  }
+
+  /* Corpo com rolagem suave */
+  .chat-widget:not(.minimized) .chat-body {
+    flex: 1; /* Estica para ocupar o espaço livre */
+    padding: 20px;
+    padding-bottom: 20px;
+  }
+
+  /* Rodapé (Input) fixo na parte inferior */
+  .chat-widget:not(.minimized) .chat-footer {
+    padding: 15px;
+    /* Protege contra a barra de gesto do iPhone (home indicator) */
+    padding-bottom: calc(15px + env(safe-area-inset-bottom, 0px));
+    background-color: #1a1a1a;
+    border-top: 1px solid #333;
+  }
+
+  /* Aumenta a fonte do input para evitar zoom automático no iOS */
+  .chat-footer input {
+    font-size: 16px !important;
+    height: 50px;
+    border-radius: 25px;
+  }
+
+  .chat-footer button {
+    width: 50px;
+    height: 50px;
+    font-size: 1.4rem;
+  }
+
+  /* --- ESTADO 2: FECHADO (BOTÃO FLUTUANTE / FAB) --- */
+  .chat-widget.minimized {
+    /* Vira uma bolinha perfeita */
+    width: 60px !important;
+    height: 60px !important;
+    border-radius: 50% !important;
+
+    /* Posicionamento */
+    position: fixed;
+    bottom: 25px;
+    right: 25px;
+    left: auto; /* Remove alinhamento antigo */
+
+    /* Visual */
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.6);
+    background: linear-gradient(135deg, var(--color-red) 0%, #900 100%);
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    cursor: pointer;
+    transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+
+    /* Centraliza o conteúdo */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+
+  /* Efeito de pulso para chamar atenção */
+  .chat-widget.minimized {
+    animation: pulseChat 3s infinite;
+  }
+
+  @keyframes pulseChat {
+    0% {
+      box-shadow: 0 0 0 0 rgba(217, 48, 37, 0.7);
+    }
+    70% {
+      box-shadow: 0 0 0 15px rgba(217, 48, 37, 0);
+    }
+    100% {
+      box-shadow: 0 0 0 0 rgba(217, 48, 37, 0);
+    }
+  }
+
+  /* Ao clicar no botão */
+  .chat-widget.minimized:active {
+    transform: scale(0.9);
+  }
+
+  /* ESCONDE o conteúdo padrão do header quando minimizado */
+  .chat-widget.minimized .chat-header {
+    background: transparent;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    position: absolute;
+  }
+
+  .chat-widget.minimized .chat-title,
+  .chat-widget.minimized .chat-toggle-btn {
+    display: none !important;
+  }
+
+  /* INSERE um ícone de chat limpo no lugar */
+  .chat-widget.minimized::after {
+    content: "\f086"; /* Ícone de chat (FontAwesome) */
+    font-family: "Font Awesome 6 Free";
+    font-weight: 900;
+    color: #fff;
+    font-size: 26px;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+  }
+}
