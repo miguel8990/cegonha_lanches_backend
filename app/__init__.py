@@ -9,36 +9,39 @@ import os
 
 def create_app():
     app = Flask(__name__)
-
-    # 1. Carrega configurações básicas do Config.py
     app.config.from_object(Config)
 
     # ==========================================================================
-    # CORREÇÃO CRÍTICA: Configuração do JWT ANTES de iniciar a extensão
+    # CORREÇÃO CRÍTICA: Configuração JWT ANTES de inicializar
     # ==========================================================================
-    # Verifica a variável de ambiente (garante que lê 'production' corretamente)
     env_flask = os.getenv('FLASK_ENV', 'development')
     is_production = env_flask == 'production'
-    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
 
-    print(f"🔧 Iniciando App. Ambiente: {env_flask} | Modo Produção: {is_production}")
-
-    app.config["JWT_TOKEN_LOCATION"] = ["cookies"]
-    app.config["JWT_ACCESS_COOKIE_NAME"] = "token"
-
-    # Força configurações de cookie seguro se for produção
+    # Proxy fix para produção (Render, Heroku, etc)
     if is_production:
-        app.config["JWT_COOKIE_SECURE"] = True
-        app.config["JWT_COOKIE_SAMESITE"] = "None"
-        app.config["JWT_COOKIE_CSRF_PROTECT"] = False
+        app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)
+
+    print(f"🔧 Ambiente: {env_flask} | Produção: {is_production}")
+
+    # JWT Cookie Configuration
+    app.config["JWT_TOKEN_LOCATION"] = ["cookies"]
+    app.config["JWT_COOKIE_NAME"] = "token"
+    app.config["JWT_ACCESS_COOKIE_PATH"] = "/"
+
+    # 🔥 CRÍTICO: Sempre False para desenvolvimento local
+    app.config["JWT_COOKIE_SECURE"] = is_production
+
+    # 🔥 CORREÇÃO: SameSite deve ser "None" em produção E Secure=True
+    if is_production:
+        app.config["JWT_COOKIE_SAMESITE"] = "None"  # Permite cross-origin
     else:
-        app.config["JWT_COOKIE_SECURE"] = False
-        app.config["JWT_COOKIE_SAMESITE"] = "Lax"
-        app.config["JWT_COOKIE_CSRF_PROTECT"] = False
+        app.config["JWT_COOKIE_SAMESITE"] = "Lax"  # Localhost não precisa None
+
+    app.config["JWT_COOKIE_CSRF_PROTECT"] = False
 
     # ==========================================================================
-
-    # 2. Configura REDIS
+    # REDIS
+    # ==========================================================================
     redis_url = os.getenv('REDIS_URI')
     if redis_url:
         app.config['RATELIMIT_STORAGE_URI'] = redis_url
@@ -46,28 +49,41 @@ def create_app():
         if redis_client:
             redis_client.init_app(app)
 
-    # 3. Inicia Extensões (AGORA COM AS CONFIGURAÇÕES CERTAS CARREGADAS)
+    # ==========================================================================
+    # EXTENSÕES
+    # ==========================================================================
     db.init_app(app)
     migrate.init_app(app, db)
-    jwt.init_app(app)  # <--- Agora ele vai ler o JWT_COOKIE_SECURE = True
+    jwt.init_app(app)
     ma.init_app(app)
     limiter.init_app(app)
 
+    # ==========================================================================
+    # 🔥 CORREÇÃO CRÍTICA DO CORS
+    # ==========================================================================
+    frontend_urls = [
+        "https://miguel8990.github.io",
+        "http://localhost:8000",
+        "http://127.0.0.1:8000",
+        "http://localhost:5000"  # Para testes locais
+    ]
+
     CORS(
         app,
-        supports_credentials=True,
+        supports_credentials=True,  # 🔥 ESSENCIAL para cookies
         resources={
             r"/api/*": {
-                "origins": [
-                    "https://miguel8990.github.io",
-                    "http://localhost:8000",
-                    "http://127.0.0.1:8000"
-                ]
+                "origins": frontend_urls,
+                "allow_headers": ["Content-Type", "Authorization"],
+                "expose_headers": ["Set-Cookie"],
+                "methods": ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"]
             }
         }
     )
 
-    # 5. Registro de Blueprints
+    # ==========================================================================
+    # BLUEPRINTS
+    # ==========================================================================
     from .routes.routes_menu import bp_menu
     from .routes.routes_orders import bp_orders
     from .routes.routes_auth import bp_auth
@@ -94,8 +110,6 @@ def create_app():
     app.register_blueprint(bp_upload, url_prefix='/api/upload')
 
     configure_errors(app)
-
-    # 6. Inicia SocketIO
     socketio.init_app(app, cors_allowed_origins="*", message_queue=redis_url)
 
     return app
