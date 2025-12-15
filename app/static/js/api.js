@@ -8,9 +8,7 @@ const isLocalhost =
   window.location.hostname === "127.0.0.1";
 
 // 🔥 MUDANÇA: Use '/api' na produção (relativo)
-export const API_BASE_URL = isLocalhost
-  ? `http://${window.location.hostname}:5000/api`
-  : "/api"; // <--- NOVO: Caminho relativo
+export const API_BASE_URL = "/api";
 
 /**
  * HELPER CENTRALIZADO DE REQUISIÇÕES
