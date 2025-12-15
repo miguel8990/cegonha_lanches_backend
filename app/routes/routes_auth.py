@@ -73,7 +73,7 @@ def confirm_email():
     resultado = auth_service.confirmar_email(token)  # NOVO
 
     if resultado["sucesso"]:
-        dest_url = f"{frontend_url}/index.html?status=verified&token={resultado['token']}&name={resultado['name']}&role={resultado['role']}&id={resultado['id']}&whatsapp={resultado['whatsapp']}"
+        dest_url = f"{frontend_url}/index.html?status=verified"
         resp = make_response(redirect(dest_url))
 
         set_access_cookies(resp, resultado['token'])
@@ -271,3 +271,28 @@ def logout():
     # Apaga o cookie definindo validade para o passado
     unset_jwt_cookies(response)
     return response
+
+
+
+@bp_auth.route('/me', methods=['GET'])
+@jwt_required() # <--- ESSENCIAL: Protege a rota com o cookie HttpOnly
+def get_user_data():
+    """
+    Retorna os dados públicos do usuário logado (usado pelo frontend para a UI).
+    """
+    current_user_id = get_jwt_identity()
+    user = User.query.get(current_user_id)
+
+    if not user:
+        # Se por algum motivo o ID do token não existir no banco
+        return jsonify({"msg": "Usuário não encontrado"}), 404
+
+    # Retorna apenas os dados necessários para a interface (sem a hash da senha)
+    return jsonify({
+        "id": user.id,
+        "name": user.name,
+        "email": user.email,
+        "role": user.role,
+        "whatsapp": user.whatsapp,
+        "is_verified": user.is_verified
+    }), 200
