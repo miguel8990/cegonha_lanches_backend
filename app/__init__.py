@@ -61,28 +61,28 @@ def create_app():
     ma.init_app(app)
     limiter.init_app(app)
 
-    # ==========================================================================
-    # 🔥 CORREÇÃO CRÍTICA DO CORS
-    # ==========================================================================
-    frontend_urls = [
-        "https://miguel8990.github.io",
-        "http://localhost:8000",
-        "http://127.0.0.1:8000",
-        "http://localhost:5000"  # Para testes locais
-    ]
+    
+    if not is_production:
+        # ==========================================================================
+        # 🔥 CORREÇÃO CRÍTICA DO CORS
+        # ==========================================================================
+        frontend_urls = [
+            "http://localhost:5000"  # Para testes locais
+        ]
 
-    CORS(
-        app,
-        supports_credentials=True,  # 🔥 ESSENCIAL para cookies
-        resources={
-            r"/api/*": {
-                "origins": frontend_urls,
-                "allow_headers": ["Content-Type", "Authorization"],
-                "expose_headers": ["Set-Cookie"],
-                "methods": ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"]
+        
+        CORS(
+            app,
+            supports_credentials=True,  # 🔥 ESSENCIAL para cookies
+            resources={
+                r"/api/*": {
+                    "origins": frontend_urls,
+                    "allow_headers": ["Content-Type", "Authorization"],
+                    "expose_headers": ["Set-Cookie"],
+                    "methods": ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"]
+                }
             }
-        }
-    )
+        )
 
     # ==========================================================================
     # BLUEPRINTS
