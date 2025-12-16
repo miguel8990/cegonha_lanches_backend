@@ -3423,3 +3423,41 @@ ul.magic-text-body li span {
     background-color: var(--color-gold); /* Destaque dourado */
   }
 }
+
+/* ============================================================
+     CORREÇÃO: BOTÃO RETIRADA NO LOCAL (MOBILE)
+     ID: #retirada-local-box
+     ============================================================ */
+
+/* O Container do grupo */
+#retirada-local-box {
+  width: 100%;
+  margin-top: 15px;
+  margin-bottom: 25px; /* Mais espaço para separar do endereço */
+  display: block; /* Garante que ocupe a linha */
+}
+
+/* O Label clicável (que parece um botão) */
+#retirada-local-label {
+  max-width: 100% !important; /* 🔥 CRÍTICO: Sobrescreve o limite de 20% do Desktop */
+  width: 100%; /* Ocupa a tela toda */
+
+  /* Melhorias de UX para Mobile */
+  justify-content: center; /* Centraliza o texto e o check */
+  padding: 18px; /* Área de toque generosa para o dedo */
+  background-color: #1e1e1e; /* Fundo levemente destacado */
+  border: 1px solid #444;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2); /* Sombra para dar profundidade */
+}
+
+/* Efeito visual quando selecionado (Feedback) */
+#retirada-local-label:has(input:checked) {
+  background-color: rgba(242, 201, 76, 0.1); /* Fundo Dourado Transparente */
+  border-color: var(--color-gold);
+}
+
+/* Ajuste do texto interno */
+#retirada-local-label .label-text {
+  font-size: 1.1rem; /* Texto um pouco maior */
+  margin-left: 10px;
+}
