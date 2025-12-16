@@ -3042,150 +3042,384 @@ ul.magic-text-body li span {
 }
 
 /* =============================================================================
-   CHAT MOBILE ULTRA-RESPONSIVO (ADD-ON)
-   Transforma o chat em Tela Cheia no mobile para facilitar a digitação
+   CHAT MOBILE ULTRA-RESPONSIVO (ADD-ON - REFATORADO)
+   Transforma o chat em Tela Cheia no mobile (Full App Experience)
+   Corrigido: Header, Input de Texto e Abertura
 ============================================================================= */
 
 @media (max-width: 768px) {
-  /* --- ESTADO 1: ABERTO (TELA CHEIA) --- */
+  /* --- CONFIGURAÇÃO BASE DO CONTAINER (ANIMATION & Z-INDEX) --- */
+  .chat-widget {
+    /* Garante que o widget flutue sobre tudo (Header fixo, modais, etc) */
+    z-index: 99999 !important;
+    transition: all 0.35s cubic-bezier(0.19, 1, 0.22, 1); /* Efeito 'Spring' suave */
+    overflow: hidden; /* Impede vazamento de scroll */
+  }
+
+  /* =========================================
+     ESTADO 1: ABERTO (TELA CHEIA / FULLSCREEN)
+     ========================================= */
   .chat-widget:not(.minimized) {
     position: fixed !important;
-    top: 0;
-    left: 0;
+    /* Inset 0 garante alinhamento total nas 4 bordas */
+    inset: 0;
+
+    /* Força ocupar toda a viewport */
     width: 100% !important;
-    height: 100% !important; /* Ocupa a tela toda */
-    max-height: 100vh; /* Garante que não ultrapasse a viewport */
-    border-radius: 0 !important; /* Remove cantos arredondados */
-    margin: 0;
-    z-index: 99999; /* Fica acima de TUDO, inclusive menus */
-    display: flex;
+    height: 100dvh !important; /* dvh: Dynamic Viewport Height (evita bugs com barra de url mobile) */
+
+    border-radius: 0 !important; /* Remove arredondamento para parecer app nativo */
+    margin: 0 !important;
+    background-color: #1a1a1a;
+
+    /* Layout Flexbox Vertical para separar Header / Body / Footer */
+    display: flex !important;
     flex-direction: column;
-    animation: slideUpMobile 0.3s ease-out;
   }
 
-  /* Animação de entrada vindo de baixo */
-  @keyframes slideUpMobile {
-    from {
-      transform: translateY(100%);
-      opacity: 0;
-    }
-    to {
-      transform: translateY(0);
-      opacity: 1;
-    }
-  }
-
-  /* Cabeçalho maior para toque */
+  /* --- HEADER (CABEÇALHO CORRIGIDO) --- */
   .chat-widget:not(.minimized) .chat-header {
-    height: 65px;
+    flex-shrink: 0; /* Impede que o header seja espremido */
+    width: 100%;
+    height: auto;
+
+    /* Altura mínima confortável para toque + Espaço do entalhe (Notch) */
+    min-height: 70px;
     padding: 15px 20px;
-    border-radius: 0;
-    /* Ajuste para entalhes (notch) de iPhones */
-    padding-top: env(safe-area-inset-top, 15px);
+    padding-top: max(20px, env(safe-area-inset-top));
+
+    background: linear-gradient(
+      135deg,
+      var(--color-red) 0%,
+      var(--color-red-dark) 100%
+    );
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
   }
 
-  /* Corpo com rolagem suave */
+  .chat-widget:not(.minimized) .chat-header h4 {
+    font-size: 1.1rem; /* Texto levemente maior */
+  }
+
+  /* --- BODY (ÁREA DE MENSAGENS) --- */
   .chat-widget:not(.minimized) .chat-body {
-    flex: 1; /* Estica para ocupar o espaço livre */
+    flex: 1; /* Ocupa todo o espaço vertical disponível */
+    width: 100%;
     padding: 20px;
     padding-bottom: 20px;
+
+    /* Scroll Nativo Suave */
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+
+    background-color: #121212;
   }
 
-  /* Rodapé (Input) fixo na parte inferior */
+  /* --- FOOTER (ÁREA DE INPUT) --- */
   .chat-widget:not(.minimized) .chat-footer {
-    padding: 15px;
-    /* Protege contra a barra de gesto do iPhone (home indicator) */
-    padding-bottom: calc(15px + env(safe-area-inset-bottom, 0px));
+    flex-shrink: 0; /* Nunca encolhe */
+    width: 100%;
     background-color: #1a1a1a;
     border-top: 1px solid #333;
+
+    padding: 15px;
+    /* Adiciona padding extra embaixo para iPhones sem botão físico (Home Indicator) */
+    padding-bottom: max(15px, env(safe-area-inset-bottom));
+
+    display: flex;
+    gap: 12px;
+    align-items: center;
   }
 
-  /* Aumenta a fonte do input para evitar zoom automático no iOS */
+  /* Ajuste do Input para evitar Zoom Automático no iOS */
   .chat-footer input {
-    font-size: 16px !important;
-    height: 50px;
+    font-size: 16px !important; /* < 16px causa zoom no iPhone */
+    height: 50px; /* Área de toque generosa */
     border-radius: 25px;
+    background-color: #252525;
+    border: 1px solid #444;
   }
 
+  /* Botão de Enviar maior */
   .chat-footer button {
     width: 50px;
     height: 50px;
-    font-size: 1.4rem;
+    border-radius: 50%;
+    background-color: var(--color-gold); /* Destaque visual */
+    color: #1a1a1a;
+    font-size: 1.2rem;
+    flex-shrink: 0;
   }
 
-  /* --- ESTADO 2: FECHADO (BOTÃO FLUTUANTE / FAB) --- */
-  .chat-widget.minimized {
-    /* Vira uma bolinha perfeita */
-    width: 60px !important;
-    height: 60px !important;
-    border-radius: 50% !important;
+  /* =============================================================================
+   CHAT MOBILE ULTRA-RESPONSIVO (CORRIGIDO v2)
+   Transforma o chat em Tela Cheia no mobile e CORRIGE O CLIQUE
+============================================================================= */
 
-    /* Posicionamento */
-    position: fixed;
-    bottom: 25px;
-    right: 25px;
-    left: auto; /* Remove alinhamento antigo */
-
-    /* Visual */
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.6);
-    background: linear-gradient(135deg, var(--color-red) 0%, #900 100%);
-    border: 2px solid rgba(255, 255, 255, 0.2);
-    cursor: pointer;
-    transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-
-    /* Centraliza o conteúdo */
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    overflow: hidden;
-  }
-
-  /* Efeito de pulso para chamar atenção */
-  .chat-widget.minimized {
-    animation: pulseChat 3s infinite;
-  }
-
-  @keyframes pulseChat {
-    0% {
-      box-shadow: 0 0 0 0 rgba(217, 48, 37, 0.7);
+  @media (max-width: 768px) {
+    /* --- CONFIGURAÇÃO BASE --- */
+    .chat-widget {
+      z-index: 99999 !important;
+      transition: all 0.35s cubic-bezier(0.19, 1, 0.22, 1);
+      overflow: hidden;
     }
-    70% {
-      box-shadow: 0 0 0 15px rgba(217, 48, 37, 0);
+
+    /* =========================================
+     ESTADO 1: ABERTO (TELA CHEIA)
+     ========================================= */
+    .chat-widget:not(.minimized) {
+      position: fixed !important;
+      inset: 0; /* Cola nas 4 bordas */
+      width: 100% !important;
+      height: 100dvh !important; /* Altura total da viewport dinâmica */
+      border-radius: 0 !important;
+      margin: 0 !important;
+      background-color: #1a1a1a;
+      display: flex !important;
+      flex-direction: column;
     }
-    100% {
-      box-shadow: 0 0 0 0 rgba(217, 48, 37, 0);
+
+    /* Header Aberto */
+    .chat-widget:not(.minimized) .chat-header {
+      flex-shrink: 0;
+      width: 100%;
+      min-height: 70px;
+      padding: 15px 20px;
+      /* Protege contra o 'notch' (entalhe) do iPhone */
+      padding-top: max(20px, env(safe-area-inset-top));
+      background: linear-gradient(
+        135deg,
+        var(--color-red) 0%,
+        var(--color-red-dark) 100%
+      );
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+
+      /* Garante visibilidade quando aberto */
+      opacity: 1 !important;
+      position: relative !important;
+    }
+
+    /* Corpo do Chat */
+    .chat-widget:not(.minimized) .chat-body {
+      flex: 1;
+      width: 100%;
+      padding: 20px;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      background-color: #121212;
+    }
+
+    /* Rodapé (Input) */
+    .chat-widget:not(.minimized) .chat-footer {
+      flex-shrink: 0;
+      width: 100%;
+      background-color: #1a1a1a;
+      border-top: 1px solid #333;
+      padding: 15px;
+      /* Protege contra a barra de gesto inferior do iPhone */
+      padding-bottom: max(15px, env(safe-area-inset-bottom));
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .chat-footer input {
+      font-size: 16px !important; /* Evita zoom no iOS */
+      height: 50px;
+      border-radius: 25px;
+      background-color: #252525;
+      border: 1px solid #444;
+    }
+
+    .chat-footer button {
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      font-size: 1.2rem;
+    }
+
+    /* =========================================
+     ESTADO 2: FECHADO (BOTÃO FLUTUANTE)
+     ========================================= */
+    .chat-widget.minimized {
+      width: 60px !important;
+      height: 60px !important;
+      border-radius: 50% !important;
+
+      position: fixed !important;
+      bottom: 25px;
+      right: 25px;
+      left: auto !important;
+      top: auto !important;
+
+      background: linear-gradient(135deg, var(--color-red), #990000);
+      border: 2px solid rgba(255, 255, 255, 0.2);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+
+      /* Centraliza o ícone visual ::after */
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* --- O TRUQUE DO CLIQUE (ESSENCIAL) --- */
+    /* Mantemos o header PRESENTE mas INVISÍVEL cobrindo todo o botão.
+     Isso garante que o clique funcione pois o header contém o onclick="" */
+    .chat-widget.minimized .chat-header {
+      display: block !important;
+      position: absolute !important;
+      top: 0;
+      left: 0;
+      width: 100% !important;
+      height: 100% !important;
+      opacity: 0 !important; /* Invisível */
+      z-index: 20; /* Fica na frente de tudo para capturar o clique */
+      cursor: pointer;
+    }
+
+    /* Esconde apenas o conteúdo interno do header para não vazar texto */
+    .chat-widget.minimized .chat-header * {
+      display: none !important;
+    }
+
+    /* Esconde corpo e footer */
+    .chat-widget.minimized .chat-body,
+    .chat-widget.minimized .chat-footer {
+      display: none !important;
+    }
+
+    /* Ícone Visual do Chat (Bolinha) */
+    .chat-widget.minimized::after {
+      content: "\f086";
+      font-family: "Font Awesome 6 Free";
+      font-weight: 900;
+      font-size: 26px;
+      color: #fff;
+      pointer-events: none; /* Deixa o clique passar para o header invisível */
+      animation: pulseChatMobile 3s infinite;
+    }
+
+    @keyframes pulseChatMobile {
+      0% {
+        transform: scale(1);
+        box-shadow: 0 0 0 0 rgba(217, 48, 37, 0.7);
+      }
+      70% {
+        transform: scale(1.05);
+        box-shadow: 0 0 0 10px rgba(217, 48, 37, 0);
+      }
+      100% {
+        transform: scale(1);
+        box-shadow: 0 0 0 0 rgba(217, 48, 37, 0);
+      }
+    }
+  }
+}
+
+/* =============================================================================
+   HEADER OTIMIZADO PARA MOBILE (COMPACTO)
+   Objetivo: Evitar quebra de linha em telas pequenas transformando
+   botões de texto em botões de ícone e reduzindo espaçamentos.
+============================================================================= */
+
+@media (max-width: 768px) {
+  /* 1. Container do Header: Reduz altura e padding lateral */
+  #main-header .container {
+    height: 55px; /* Altura mais compacta */
+    padding: 0 12px; /* Menos margem nas bordas */
+    justify-content: space-between; /* Garante separação Logo <-> Ações */
+  }
+
+  /* 2. Logo: Ajuste de tamanho e espaçamento */
+  .container-titulo {
+    gap: 8px; /* Aproxima logo do texto */
+    margin-right: auto; /* Empurra o resto para a direita */
+  }
+
+  .logo img {
+    height: 35px; /* Logo levemente menor */
+    width: auto;
+  }
+
+  /* Texto da logo: Reduz fonte ou esconde em telas muito pequenas */
+  .logo-text {
+    font-size: 0.95rem;
+    white-space: nowrap; /* Impede quebra de linha do nome */
+  }
+
+  /* Em telas minúsculas (< 340px), esconde o texto da marca para priorizar botões */
+  @media (max-width: 340px) {
+    .logo-text {
+      display: none;
     }
   }
 
-  /* Ao clicar no botão */
-  .chat-widget.minimized:active {
-    transform: scale(0.9);
+  /* 3. Área de Ações (Direita) */
+  .nav-right {
+    gap: 8px; /* Espaço mínimo entre os botões */
   }
 
-  /* ESCONDE o conteúdo padrão do header quando minimizado */
-  .chat-widget.minimized .chat-header {
-    background: transparent;
-    padding: 0;
-    width: 100%;
-    height: 100%;
-    position: absolute;
+  .header-actions {
+    gap: 8px; /* Cola o Login no Carrinho */
   }
 
-  .chat-widget.minimized .chat-title,
-  .chat-widget.minimized .chat-toggle-btn {
-    display: none !important;
+  /* 4. Botão de Login: TRANSFORMAÇÃO RADICAL (Vira apenas ícone) */
+  .btn-login-header {
+    padding: 0; /* Remove padding lateral */
+    width: 36px; /* Largura fixa (quadrado/redondo) */
+    height: 36px;
+    border-radius: 50%; /* Vira uma bolinha */
+    justify-content: center; /* Centraliza ícone */
   }
 
-  /* INSERE um ícone de chat limpo no lugar */
-  .chat-widget.minimized::after {
-    content: "\f086"; /* Ícone de chat (FontAwesome) */
-    font-family: "Font Awesome 6 Free";
-    font-weight: 900;
-    color: #fff;
-    font-size: 26px;
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
+  /* Esconde a palavra "Entrar" para caber na tela */
+  .btn-login-header span {
+    display: none;
+  }
+
+  .btn-login-header i {
+    margin-right: 0; /* Remove margem do ícone */
+    font-size: 1rem;
+  }
+
+  /* 5. Perfil do Usuário (Se estiver logado) */
+  .profile-icon {
+    width: 36px;
+    height: 36px;
+    font-size: 1rem;
+  }
+
+  /* 6. Botão do Carrinho: Compacto */
+  .cart-btn {
+    width: 36px;
+    height: 36px;
+    font-size: 1rem;
+    border-width: 1px; /* Borda mais fina */
+  }
+
+  /* Contador do carrinho (bolinha vermelha) ajustado */
+  .cart-count {
+    width: 16px;
+    height: 16px;
+    font-size: 0.65rem;
+    top: -2px;
+    right: -2px;
+    border-width: 1px;
+  }
+
+  /* 7. Menu Hambúrguer */
+  .hamburger {
+    margin-left: 5px; /* Pequeno respiro do carrinho */
+  }
+
+  .hamburger span {
+    width: 22px; /* Traços levemente menores */
+    height: 2px;
+    background-color: var(--color-gold); /* Destaque dourado */
   }
 }
