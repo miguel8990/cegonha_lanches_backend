@@ -45,7 +45,7 @@ def register():
 # 🔑 LOGIN (CORRIGIDO)
 # =============================================================================
 @bp_auth.route('/login', methods=['POST'])
-@limiter.limit("8 per hour")
+@limiter.limit("8 per hour", error_message="Muitas tentativas.")
 def login():
     data = request.get_json()
     resultado = auth_service.login_user(data)
@@ -69,7 +69,7 @@ def login():
 # ✉️ CONFIRMAÇÃO DE EMAIL (UNIFICADA)
 # =============================================================================
 @bp_auth.route('/confirm-email', methods=['GET'])
-@limiter.limit("10 per hour")
+@limiter.limit("10 per hour", error_message="Muitas tentativas.")
 def confirm_email():
     """
     Rota que valida o token, seta o cookie e redireciona para o site.
@@ -105,7 +105,7 @@ def confirm_email():
 # 🪄 MAGIC LINK - REQUEST
 # =============================================================================
 @bp_auth.route('/magic-login/request', methods=['POST'])
-@limiter.limit("8 per hour")
+@limiter.limit("8 per hour", error_message="Muitas tentativas.")
 def request_magic_link():
     data = request.get_json()
     resultado = auth_service.magic_link(data)
@@ -142,7 +142,7 @@ def update_profile():
 # 🔐 GOOGLE AUTH (CORRIGIDO)
 # =============================================================================
 @bp_auth.route('/google', methods=['POST'])
-@limiter.limit("8 per hour")
+@limiter.limit("8 per hour", error_message="Muitas tentativas.")
 def google_auth():
     data = request.get_json()
     credential_token = data.get('credential')
@@ -221,7 +221,7 @@ def get_user_data():
 # 🔑 RESET DE SENHA
 # =============================================================================
 @bp_auth.route('/forgot-password', methods=['POST'])
-@limiter.limit("6 per day")
+@limiter.limit("6 per day", error_message="Muitas tentativas.")
 def forgot_password():
     data = request.get_json()
     email = data.get('email')
