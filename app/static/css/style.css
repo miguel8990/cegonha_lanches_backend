@@ -712,10 +712,10 @@ select#bairro:focus {
   align-items: center;
   gap: 15px;
   cursor: pointer;
-  background-color: #121212;
+
   padding: 15px;
   border-radius: 8px;
-  border: 1px solid #444;
+
   transition: 0.3s;
   user-select: none;
   margin-top: 10px;
