@@ -53,6 +53,15 @@
             <li><a href="#combos">Combos</a></li>
             <li><a href="#contact">Contato</a></li>
             <li><a href="#about">Sobre Nós</a></li>
+            <li class="mobile-cart-item">
+              <button class="cart-btn" onclick="toggleCart()">
+                <i class="fa-solid fa-cart-shopping"></i>
+                <span class="cart-count">0</span>
+                <span style="margin-left: 10px; font-size: 1rem"
+                  >Meu Carrinho</span
+                >
+              </button>
+            </li>
           </ul>
 
           <div class="header-actions">
@@ -571,12 +580,14 @@
 
     <div id="modal-auth" class="modal-overlay">
       <div class="modal-content auth-content">
-        <button class="close-modal" onclick="closeAuthModal()">&times;</button>
-
-        <span class="close-modal" onclick="fecharModalAuth()">&times;</span>
-
-        <div style="text-align: center; margin-bottom: 20px">
+        <div
+          id="header-modal-body"
+          style="text-align: center; margin-bottom: 20px"
+        >
           <img src="assets/logo2.webp" alt="Logo" style="height: 60px" />
+          <button class="close-modal-stylish" onclick="closeAuthModal()">
+            &times;
+          </button>
         </div>
 
         <div class="auth-tabs">

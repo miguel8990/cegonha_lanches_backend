@@ -605,3 +605,224 @@ td {
     overflow-x: auto;
   }
 }
+
+/* =============================================================================
+   MOBILE ADMIN (CORREÇÃO PEDIDOS 1 COLUNA + CHAT TRAVADO)
+   Adicione ou Substitua ao final do arquivo admin.css
+============================================================================= */
+
+/* --- ELEMENTOS DE CONTROLE (Padrão: Ocultos no Desktop) --- */
+.admin-mobile-toggle {
+  display: none;
+}
+.sidebar-close-btn {
+  display: none;
+}
+
+/* Wrapper para tabelas responsivas (Adicione essa div em volta das tabelas no HTML) */
+.table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  margin-bottom: 20px;
+  border: 1px solid #333;
+  border-radius: 6px;
+}
+
+/* --- BLOCO MOBILE --- */
+@media (max-width: 768px) {
+  /* 1. ESTRUTURA GERAL */
+  body {
+    display: block;
+    height: auto;
+    min-height: 100vh;
+    overflow-x: hidden;
+    overflow-y: auto;
+    background-color: #111;
+  }
+
+  /* 2. SIDEBAR (Menu Lateral Off-Canvas) */
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: -280px;
+    width: 260px;
+    height: 100vh;
+    z-index: 2000;
+    background-color: #1a1a1a;
+    box-shadow: 10px 0 30px rgba(0, 0, 0, 0.9);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transform: translateX(0);
+  }
+
+  /* Ativação do menu */
+  .sidebar.active {
+    transform: translateX(280px);
+  }
+
+  /* Botão de Fechar (Dentro da Sidebar) */
+  .sidebar-close-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    width: 100%;
+    background: #222;
+    border: 1px solid #333;
+    color: #fff;
+    padding: 12px;
+    margin-bottom: 20px;
+    cursor: pointer;
+    font-weight: bold;
+    border-radius: 6px;
+  }
+
+  /* Botão Flutuante (CANTO INFERIOR ESQUERDO) */
+  .admin-mobile-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: fixed;
+    top: 5px; /* Em baixo */
+    right: 5px; /* <--- MUDANÇA: Agora na ESQUERDA */
+    z-index: 1500;
+    width: 30px;
+    height: 30px;
+    background-color: var(--color-gold);
+    color: #000;
+    border: none;
+    border-radius: 50%;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.6);
+    font-size: 1.4rem;
+    cursor: pointer;
+  }
+
+  /* 3. CONTEÚDO PRINCIPAL */
+  .main-content {
+    margin-left: 0;
+    width: 100%;
+    padding: 15px;
+    padding-bottom: 80px;
+  }
+
+  /* 4. PEDIDOS / HISTÓRICO (1 COLUNA POR LINHA) */
+  .orders-grid {
+    display: grid;
+    grid-template-columns: 1fr; /* <--- FORÇA 1 COLUNA (Ocupa toda a largura) */
+    gap: 15px;
+  }
+
+  .admin-order-card {
+    width: 100%; /* Garante largura total */
+  }
+
+  /* 5. COZINHA (KDS) - Scroll Horizontal (Estilo Trello) */
+  .kitchen-container {
+    display: flex;
+    flex-direction: row;
+    gap: 15px;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    padding-bottom: 20px;
+    width: 100vw;
+    margin-left: -15px;
+    padding-left: 15px;
+    padding-right: 15px;
+  }
+
+  .kitchen-column {
+    min-width: 85vw;
+    scroll-snap-align: center;
+    height: calc(100vh - 160px);
+    display: flex;
+    flex-direction: column;
+    border-right: 1px solid #333;
+  }
+
+  /* 6. CHAT FIXADO (CORREÇÃO DE SOBREPOSIÇÃO) */
+  .chat-layout {
+    display: flex;
+    flex-direction: column;
+    height: 75vh; /* <--- ALTURA TRAVADA: Impede crescer infinito */
+    border: 1px solid #333;
+    border-radius: 8px;
+    overflow: hidden; /* Nada sai da caixa */
+    margin-bottom: 20px;
+  }
+
+  /* Lista de Usuários (Topo) */
+  .chat-sidebar-list {
+    width: 100%;
+    height: 90px; /* Altura fixa para a lista */
+    flex-shrink: 0; /* Impede encolher */
+    display: flex;
+    flex-direction: row; /* Horizontal */
+    overflow-x: auto;
+    border-right: none;
+    border-bottom: 1px solid #333;
+    background-color: #1a1a1a;
+  }
+
+  .chat-user-item {
+    min-width: 160px;
+    border-bottom: none;
+    border-right: 1px solid #333;
+    padding: 10px;
+    font-size: 0.9rem;
+  }
+
+  /* Janela de Conversa */
+  .chat-window {
+    flex: 1; /* Ocupa todo o espaço restante da altura de 75vh */
+    display: flex;
+    flex-direction: column;
+    min-height: 0; /* Importante para o Flexbox não estourar */
+    overflow: hidden;
+  }
+
+  /* Área das Mensagens (Rolagem Interna) */
+  .chat-messages-container {
+    flex: 1;
+    overflow-y: auto; /* <--- AQUI ESTÁ A MÁGICA: Só as mensagens rolam */
+    padding: 15px;
+    gap: 10px;
+  }
+
+  /* Área de Input (Sempre visível em baixo) */
+  .chat-input-area {
+    flex-shrink: 0; /* Nunca encolhe */
+    padding: 10px;
+    background: #222;
+    border-top: 1px solid #333;
+  }
+
+  /* 7. RELATÓRIOS E CONFIGURAÇÕES */
+  .header-section {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  .header-section button,
+  .header-section select {
+    width: 100%;
+  }
+
+  /* Tabelas com Scroll Horizontal */
+  .admin-table {
+    display: block;
+    width: 100%;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+
+  .admin-table th,
+  .admin-table td {
+    padding: 15px;
+  }
+
+  /* Grids de Cupons/Config (1 Coluna) */
+  .grid-list {
+    grid-template-columns: 1fr;
+    gap: 15px;
+  }
+}

@@ -15,7 +15,21 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.4/socket.io.min.js"></script>
   </head>
   <body>
+    <button
+      class="admin-mobile-toggle"
+      onclick="document.querySelector('.sidebar').classList.toggle('active')"
+    >
+      <i class="fa-solid fa-bars"></i>
+    </button>
     <nav class="sidebar">
+      <nav class="sidebar">
+        <button
+          class="sidebar-close-btn"
+          onclick="document.querySelector('.sidebar').classList.remove('active')"
+        >
+          <i class="fa-solid fa-times"></i> Fechar Menu
+        </button>
+      </nav>
       <div class="admin-logo"><i class="fa-solid fa-user-gear"></i> Painel</div>
       <div class="sidebar-menu">
         <button class="active" onclick="switchPanel('kitchen')">

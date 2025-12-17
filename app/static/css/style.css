@@ -92,7 +92,9 @@ h2.section-title {
   display: inline-block;
   width: 100%;
 }
-
+.mobile-cart-item {
+  display: none;
+}
 h2.section-title::after {
   content: "";
   display: block;
@@ -913,14 +915,6 @@ footer {
   margin-top: 5px;
   font-size: 0.8rem;
 }
-@media (max-width: 768px) {
-  .footer-content {
-    text-align: center;
-  }
-  .payment-icons {
-    justify-content: center;
-  }
-}
 
 /* --- SIDEBAR E OUTROS UTILS DO ARQUIVO ORIGINAL --- */
 .cart-sidebar {
@@ -1021,49 +1015,6 @@ footer {
 }
 .close-cart:active {
   transform: scale(0.9);
-}
-
-/* --- RESPONSIVIDADE GERAL MANTIDA --- */
-@media (max-width: 768px) {
-  .nav-links {
-    display: none;
-    position: absolute;
-    top: 100%;
-    left: 0;
-    width: 100%;
-    background-color: #1a1a1a;
-    flex-direction: column;
-    padding: 20px;
-    border-bottom: 1px solid #333;
-  }
-  .nav-links.active {
-    display: flex;
-  }
-  .hamburger {
-    display: flex;
-  }
-  .nav-right {
-    gap: 10px;
-  }
-  .btn-login-header {
-    padding: 6px 12px;
-    font-size: 0.8rem;
-  }
-  .logo img {
-    height: 40px;
-  }
-  .logo-text {
-    font-size: 1rem;
-  }
-  .status-box {
-    display: none;
-  }
-  .about-content {
-    flex-direction: column;
-  }
-  .contact-wrapper {
-    flex-direction: column;
-  }
 }
 
 @media (min-width: 769px) {
@@ -1672,22 +1623,6 @@ footer {
   font-weight: 600;
 }
 
-/* Responsividade: Ajuste para celulares */
-@media (max-width: 768px) {
-  #Texto-info {
-    width: 100%; /* Ocupa tudo no mobile */
-    padding: 20px;
-  }
-
-  .info-title {
-    font-size: 1.5rem;
-  }
-
-  .info-text {
-    font-size: 1rem;
-  }
-}
-
 /* =========================================
    PERSONALIZAÇÃO: MENU DE PERFIL (#profile-menu)
    ========================================= */
@@ -1808,21 +1743,6 @@ footer {
   }
 }
 
-/* Ajuste Mobile */
-@media (max-width: 768px) {
-  #profile-menu {
-    right: 50%;
-    transform: translateX(50%); /* Centraliza na tela do celular */
-    width: 280px;
-    top: 70px;
-  }
-
-  /* Ajusta a seta para o meio no mobile */
-  #profile-menu::before {
-    right: 50%;
-    margin-right: -7px;
-  }
-}
 /* =========================================
    PERSONALIZAÇÃO: MODAL DE ENDEREÇOS (#modal-addresses)
    ========================================= */
@@ -3330,8 +3250,8 @@ ul.magic-text-body li span {
 @media (max-width: 768px) {
   /* 1. Container do Header: Reduz altura e padding lateral */
   #main-header .container {
-    height: 55px; /* Altura mais compacta */
-    padding: 0 12px; /* Menos margem nas bordas */
+    height: 50px; /* Altura mais compacta */
+    padding: 0 9px; /* Menos margem nas bordas */
     justify-content: space-between; /* Garante separação Logo <-> Ações */
   }
 
@@ -3422,42 +3342,235 @@ ul.magic-text-body li span {
     height: 2px;
     background-color: var(--color-gold); /* Destaque dourado */
   }
-}
 
-/* ============================================================
+  /* ============================================================
      CORREÇÃO: BOTÃO RETIRADA NO LOCAL (MOBILE)
      ID: #retirada-local-box
      ============================================================ */
 
-/* O Container do grupo */
-#retirada-local-box {
+  /* O Container do grupo */
+  #retirada-local-box {
+    width: 100%;
+    margin-top: 15px;
+    margin-bottom: 25px; /* Mais espaço para separar do endereço */
+    display: block; /* Garante que ocupe a linha */
+  }
+
+  /* O Label clicável (que parece um botão) */
+  #retirada-local-label {
+    max-width: 100% !important; /* 🔥 CRÍTICO: Sobrescreve o limite de 20% do Desktop */
+    width: 100%; /* Ocupa a tela toda */
+
+    /* Melhorias de UX para Mobile */
+    justify-content: center; /* Centraliza o texto e o check */
+    padding: 18px; /* Área de toque generosa para o dedo */
+    background-color: #1e1e1e; /* Fundo levemente destacado */
+    border: 1px solid #444;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2); /* Sombra para dar profundidade */
+  }
+
+  /* Efeito visual quando selecionado (Feedback) */
+  #retirada-local-label:has(input:checked) {
+    background-color: rgba(242, 201, 76, 0.1); /* Fundo Dourado Transparente */
+    border-color: var(--color-gold);
+  }
+
+  /* Ajuste do texto interno */
+  #retirada-local-label .label-text {
+    font-size: 1.1rem; /* Texto um pouco maior */
+    margin-left: 10px;
+  }
+}
+
+/* --- MOBILE (Telas menores) --- */
+@media (max-width: 768px) {
+  /* Mostra o carrinho dentro do menu */
+  .mobile-cart-item {
+    display: block;
+    margin-top: 20px;
+    border-top: 1px solid #333;
+    padding-top: 20px;
+    text-align: center;
+  }
+
+  /* Faz o botão do carrinho ocupar a largura toda do menu */
+  .mobile-cart-item .cart-btn {
+    width: 50%; /* Ajuste o tamanho que preferir (47%, 50%, etc) */
+    margin: 0 auto; /* 🔥 A MÁGICA: Isso pega o botão e coloca no meio da tela */
+
+    border-radius: 8px;
+    display: flex;
+    justify-content: center; /* Centraliza o texto DENTRO do botão */
+    align-items: center;
+
+    padding: 12px;
+    background-color: rgba(242, 201, 76, 0.1);
+    border-color: var(--color-gold);
+  }
+
+  /* Opcional: Esconder o carrinho original do Header para limpar espaço lá em cima */
+  .header-actions .cart-btn {
+    display: none;
+  }
+}
+/* =============================================================================
+   HEADER DO MODAL (IMG CENTRALIZADA + BOTÃO NA ESQUERDA)
+   ID: #header-modal-body
+   CORRIGIDO: Classe .close-modal-stylish
+============================================================================= */
+
+/* 1. Configuração da Div Mãe (Centraliza o conteúdo) */
+#header-modal-body {
+  position: relative; /* Limite para o botão absoluto */
+  display: flex; /* Ativa Flexbox */
+  justify-content: center; /* Centraliza a IMAGEM horizontalmente */
+  align-items: center; /* Centraliza verticalmente */
+  padding: 10px 0;
   width: 100%;
-  margin-top: 15px;
-  margin-bottom: 25px; /* Mais espaço para separar do endereço */
-  display: block; /* Garante que ocupe a linha */
+  margin-bottom: 20px; /* Mantendo o espaçamento que estava no inline */
 }
 
-/* O Label clicável (que parece um botão) */
-#retirada-local-label {
-  max-width: 100% !important; /* 🔥 CRÍTICO: Sobrescreve o limite de 20% do Desktop */
-  width: 100%; /* Ocupa a tela toda */
-
-  /* Melhorias de UX para Mobile */
-  justify-content: center; /* Centraliza o texto e o check */
-  padding: 18px; /* Área de toque generosa para o dedo */
-  background-color: #1e1e1e; /* Fundo levemente destacado */
-  border: 1px solid #444;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2); /* Sombra para dar profundidade */
+/* Garante que a imagem dentro obedeça a centralização */
+#header-modal-body img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 0 auto; /* Reforço para centralizar */
 }
 
-/* Efeito visual quando selecionado (Feedback) */
-#retirada-local-label:has(input:checked) {
-  background-color: rgba(242, 201, 76, 0.1); /* Fundo Dourado Transparente */
-  border-color: var(--color-gold);
+/* 2. O Botão Estiloso (CORRIGIDO: .close-modal-stylish) */
+#header-modal-body .close-modal-stylish {
+  /* Posicionamento Fixo na Esquerda */
+  position: absolute;
+  top: 15px;
+  right: 15px; /* Botão na esquerda */
+  z-index: 10;
+
+  /* Tamanho e Forma */
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+
+  /* Visual Glassmorphism */
+  background-color: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #fff;
+
+  /* Centralização do 'X' */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  padding-bottom: 3px;
 }
 
-/* Ajuste do texto interno */
-#retirada-local-label .label-text {
-  font-size: 1.1rem; /* Texto um pouco maior */
-  margin-left: 10px;
+/* Efeitos de Hover */
+#header-modal-body .close-modal-stylish:hover {
+  background-color: var(--color-red);
+  border-color: var(--color-red);
+  transform: rotate(90deg) scale(1.1);
+  box-shadow: 0 0 15px rgba(217, 48, 37, 0.6);
+}
+
+/* Efeito Active (Clique) */
+#header-modal-body .close-modal-stylish:active {
+  transform: scale(0.95) rotate(90deg);
+}
+
+@media (max-width: 768px) {
+  .footer-content {
+    text-align: center;
+  }
+  .payment-icons {
+    justify-content: center;
+  }
+}
+
+/* --- RESPONSIVIDADE GERAL MANTIDA --- */
+@media (max-width: 768px) {
+  .nav-links {
+    display: none;
+    position: absolute;
+    text-align: center;
+    top: 100%;
+    left: 0;
+    width: 100%;
+    background-color: #1a1a1a;
+    flex-direction: column;
+    padding: 20px;
+    border-bottom: 1px solid #333;
+  }
+  .nav-links.active {
+    display: flex;
+    text-align: center;
+  }
+  .hamburger {
+    display: flex;
+  }
+  .nav-right {
+    gap: 10px;
+  }
+  .btn-login-header {
+    padding: 6px 12px;
+    font-size: 0.8rem;
+  }
+  .logo img {
+    height: 40px;
+  }
+  .logo-text {
+    font-size: 1rem;
+  }
+  .status-box {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.85rem;
+    margin-top: -5px;
+    font-weight: 500;
+  }
+  .about-content {
+    flex-direction: column;
+  }
+  .contact-wrapper {
+    flex-direction: column;
+  }
+}
+
+/* Responsividade: Ajuste para celulares */
+@media (max-width: 768px) {
+  #Texto-info {
+    width: 100%; /* Ocupa tudo no mobile */
+    padding: 20px;
+  }
+
+  .info-title {
+    font-size: 1.5rem;
+  }
+
+  .info-text {
+    font-size: 1rem;
+  }
+}
+
+/* Ajuste Mobile */
+@media (max-width: 768px) {
+  #profile-menu {
+    right: 50%;
+    transform: translateX(20%); /* Centraliza na tela do celular */
+    width: 280px;
+    top: 70px;
+  }
+
+  /* Ajusta a seta para o meio no mobile */
+  #profile-menu::before {
+    right: 20%;
+    margin-right: -7px;
+  }
+}
+
+@media (max-width: 768px) {
 }
