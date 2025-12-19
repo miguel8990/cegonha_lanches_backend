@@ -9,20 +9,24 @@ except ImportError:
 
 
 def create_coment(dados, user_id):
-  raw_coment = dados.get('coment', '')
-  comentario_texto = dados.get("coment", "").strip()
-
+  if not user_id:
+     return {"error": "Usuário não identificado. Faça login para avaliar."}, 401
   
-  raw_coment = set(comentario_texto.lower().split())
-    
-  if BLOCKLIST.intersection(raw_coment):
-    return {"error": "Seu comentário contém palavras impróprias. Por favor, seja respeitoso."}, 400
+  raw_coment = dados.get('coment', '')
+  if not isinstance(raw_coment, str):
+        return {"error": "O comentário deve ser um texto válido."}, 400
+  
   coment = bleach.clean(raw_coment, tags=[], strip=True, attributes={}).strip()
+
+  if not coment:
+        return {"error": "O comentário não pode estar vazio."}, 400
+  
+  palavras_comentario = set(coment.lower().split())
+  if BLOCKLIST.intersection(palavras_comentario):
+    return {"error": "Seu comentário contém palavras impróprias. Por favor, seja respeitoso."}, 400
+  
   stars = dados.get('stars')
   
-
-  if any(palavra in coment.lower() for palavra in palavras_proibidas):
-     return {"error": "Por gentileza não utilize palavras ofensivas"}, 400
   if not user_id:
     return {"error": "Usuario não identificado"}, 400
   
