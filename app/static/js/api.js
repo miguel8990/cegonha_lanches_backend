@@ -1,6 +1,6 @@
 // site/js/api.js
 
-import { showToast } from "./main.js";
+import { showToast } from "./utils.js";
 
 // Configuração Dinâmica de Ambiente
 const isLocalhost =

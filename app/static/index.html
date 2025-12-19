@@ -509,6 +509,60 @@
           </div>
         </div>
       </section>
+      <br /><br />
+      <section id="avaliacoes-section" class="reviews-container">
+        <div class="container">
+          <h2 class="section-title">
+            O que dizem nossos <span class="highlight">Clientes</span>
+          </h2>
+
+          <div class="reviews-filter">
+            <label for="filtro-stars"
+              ><i class="fa-solid fa-sort"></i> Ordenar por:</label
+            >
+            <select id="filtro-stars" onchange="carregarAvaliacoes()">
+              <option value="recent">Mais Recentes</option>
+              <option value="stars_desc">Melhores Notas (5★)</option>
+              <option value="stars_asc">Menores Notas (1★)</option>
+            </select>
+          </div>
+
+          <div class="carousel-container">
+            <div id="lista-comentarios" class="carousel-track"></div>
+          </div>
+
+          <div id="form-avaliacao-wrapper" class="review-form-box hidden">
+            <h3><i class="fa-regular fa-star"></i> Deixe sua avaliação</h3>
+
+            <div class="rating-input">
+              <span class="star-icon" data-value="5">★</span>
+              <span class="star-icon" data-value="4">★</span>
+              <span class="star-icon" data-value="3">★</span>
+              <span class="star-icon" data-value="2">★</span>
+              <span class="star-icon" data-value="1">★</span>
+              <input type="hidden" id="rating-value" value="0" />
+            </div>
+
+            <textarea
+              id="texto-avaliacao"
+              placeholder="Conte para nós como foi sua experiência..."
+              maxlength="300"
+            ></textarea>
+
+            <button onclick="enviarAvaliacao()" class="btn-primary">
+              Enviar Avaliação <i class="fa-solid fa-paper-plane"></i>
+            </button>
+          </div>
+
+          <div id="login-warning" class="login-warning hidden">
+            <p>
+              <i class="fa-solid fa-lock"></i> Faça
+              <a href="#" onclick="openAuthModal()">login</a> para deixar sua
+              avaliação.
+            </p>
+          </div>
+        </div>
+      </section>
     </main>
 
     <footer>
@@ -1258,6 +1312,79 @@
         >
           Entendi, vou tentar novamente
         </button>
+      </div>
+    </div>
+
+    <div id="modal-review-overlay" class="modal-overlay hidden">
+      <div class="modal-review-content">
+        <button class="btn-close-modal" onclick="fecharModalAvaliacao()">
+          ×
+        </button>
+
+        <div class="modal-header">
+          <div class="user-avatar-placeholder">
+            <i class="fa-solid fa-user"></i>
+          </div>
+          <div class="user-info">
+            <h3 id="modal-author-name">Nome do Cliente</h3>
+            <span id="modal-review-date">Data</span>
+          </div>
+          <div id="modal-stars-display" class="modal-stars">★★★★★</div>
+        </div>
+
+        <div class="modal-body">
+          <p id="modal-review-text">Texto do comentário...</p>
+
+          <div id="modal-edit-area" class="hidden">
+            <div class="edit-stars-control">
+              <label>Alterar Nota:</label>
+              <select id="edit-stars-input">
+                <option value="5">5 Estrelas</option>
+                <option value="4">4 Estrelas</option>
+                <option value="3">3 Estrelas</option>
+                <option value="2">2 Estrelas</option>
+                <option value="1">1 Estrela</option>
+              </select>
+            </div>
+            <textarea id="edit-comment-input" maxlength="300"></textarea>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <div id="modal-owner-actions" class="hidden">
+            <button
+              onclick="ativarEdicao()"
+              id="btn-edit-mode"
+              class="btn-action btn-edit"
+            >
+              <i class="fa-solid fa-pen"></i> Editar
+            </button>
+            <button
+              onclick="deletarDoModal()"
+              id="btn-delete-modal"
+              class="btn-action btn-delete"
+            >
+              <i class="fa-solid fa-trash"></i> Excluir
+            </button>
+
+            <button
+              onclick="salvarEdicao()"
+              id="btn-save-edit"
+              class="btn-action btn-save hidden"
+            >
+              <i class="fa-solid fa-check"></i> Salvar
+            </button>
+            <button
+              onclick="cancelarEdicao()"
+              id="btn-cancel-edit"
+              class="btn-action btn-cancel hidden"
+            >
+              Cancelar
+            </button>
+          </div>
+        </div>
+
+        <input type="hidden" id="modal-current-id" />
       </div>
     </div>
   </body>

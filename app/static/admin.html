@@ -317,6 +317,9 @@
           <button class="config-tab-btn" onclick="switchConfigTab('schedule')">
             <i class="fa-solid fa-clock"></i> Horários
           </button>
+          <button class="config-tab-btn" onclick="switchConfigTab('reviews')">
+            <i class="fa-solid fa-star"></i> Avaliações
+          </button>
         </div>
 
         <div class="config-content">
@@ -439,6 +442,35 @@
                   </tr>
                 </thead>
                 <tbody id="schedule-list-body"></tbody>
+              </table>
+            </div>
+          </div>
+          <div
+            id="config-reviews"
+            class="config-subpanel"
+            style="display: none"
+          >
+            <div class="subpanel-header">
+              <h3>Gerenciar Avaliações</h3>
+              <button
+                class="btn-outline btn-small"
+                onclick="carregarAvaliacoesAdmin()"
+              >
+                <i class="fa-solid fa-rotate"></i> Atualizar
+              </button>
+            </div>
+            <div class="table-responsive">
+              <table class="admin-table">
+                <thead>
+                  <tr>
+                    <th>Data</th>
+                    <th>Cliente</th>
+                    <th>Nota</th>
+                    <th>Comentário</th>
+                    <th>Ações</th>
+                  </tr>
+                </thead>
+                <tbody id="admin-reviews-tbody"></tbody>
               </table>
             </div>
           </div>

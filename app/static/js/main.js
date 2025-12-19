@@ -29,6 +29,8 @@ import {
   verifySession,
 } from "./auth.js";
 
+import { showToast } from "./utils.js";
+
 // Estado Global
 let carrinho = [];
 let menuGlobal = [];
@@ -39,32 +41,9 @@ let cupomSelecionado = null; // Objeto do cupom
 let taxaEntregaAtual = 0;
 let lojaAberta = false;
 let horariosGlobal = [];
-
-export function showToast(message, type = "info") {
-  const container = document.getElementById("toast-container");
-  if (!container) return;
-
-  const toast = document.createElement("div");
-  toast.className = `toast ${type}`;
-
-  // Ícones baseados no tipo
-  let icon = "fa-circle-info";
-  if (type === "success") icon = "fa-circle-check";
-  if (type === "error") icon = "fa-circle-xmark";
-  if (type === "warning") icon = "fa-triangle-exclamation";
-
-  toast.innerHTML = `<i class="fa-solid ${icon}"></i> <span>${message}</span>`;
-
-  container.appendChild(toast);
-
-  // Remove do DOM após a animação (4.3s)
-  setTimeout(() => {
-    toast.remove();
-  }, 4300);
-}
+let reviewsCarregadas = [];
 
 // 2. Garante que ela também exista no window (para compatibilidade com HTML e códigos antigos)
-window.showToast = showToast;
 
 document.addEventListener("DOMContentLoaded", async () => {
   // 1. Verifica se tem retorno de Magic Link (aguarda a checagem)
@@ -88,6 +67,9 @@ document.addEventListener("DOMContentLoaded", async () => {
   salvarCarrinhoLocal();
   checkMagicLinkReturn();
   initGoogleButton();
+  verificarUsuarioLogado();
+  carregarAvaliacoes();
+  iniciarSistemaEstrelas();
 
   // Verifica Login ao carregar
   checkLoginState();
@@ -300,10 +282,13 @@ function checkLoginState() {
     if (btnLogin) btnLogin.style.display = "none";
     if (profileArea) profileArea.style.display = "flex";
     if (nameDisplay) nameDisplay.innerText = `Olá, ${user.name.split(" ")[0]}`;
-
+    verificarUsuarioLogado();
     if (adminLink) {
       adminLink.style.display =
         user.role === "admin" || user.role === "super_admin" ? "block" : "none";
+    }
+    if (document.getElementById("lista-comentarios")) {
+      carregarAvaliacoes();
     }
 
     // Busca e preenche endereço ativo (Dispara a função corrigida acima)
@@ -2236,7 +2221,7 @@ window.abrirModalMagic = function () {
     console.error(
       "ERRO: O HTML do modal #modal-magic-link não foi encontrado!"
     );
-    alert("Verifique seu e-mail! (Modal não encontrado)");
+    showToast("Verifique seu e-mail! (Modal não encontrado)", "error");
   }
 };
 
@@ -2417,7 +2402,7 @@ window.enviarPedidoFinal = function () {
     form.requestSubmit();
   } else {
     console.error("Erro crítico: Formulário 'contact-form' não encontrado.");
-    alert("Erro ao enviar. Tente recarregar a página.");
+    showToast("Erro ao enviar. Tente recarregar a página.", "error");
   }
 };
 
@@ -2429,11 +2414,296 @@ export function showCookieError() {
     // Toca um som de erro se quiser
     // const audio = new Audio("assets/error.mp3"); audio.play().catch(()=>{});
   } else {
-    alert(
-      "ERRO CRÍTICO: Seu navegador está bloqueando cookies de terceiros. Por favor, habilite-os para fazer login."
+    showToast(
+      "ERRO CRÍTICO: Seu navegador está bloqueando cookies de terceiros. Por favor, habilite-os para fazer login.",
+      "error"
     );
   }
 }
 
 // Exporta para o window para ser acessível globalmente se necessário
 window.showCookieError = showCookieError;
+let currentUserId = null;
+
+// Substitua a função antiga por esta no final do main.js
+function verificarUsuarioLogado() {
+  // Agora usamos getSession() que é a fonte da verdade do seu sistema
+  const { user } = getSession();
+
+  if (user && user.id) {
+    currentUserId = user.id; // Atualiza a variável global para o botão de deletar funcionar
+
+    const form = document.getElementById("form-avaliacao-wrapper");
+    const warning = document.getElementById("login-warning");
+
+    if (form) form.classList.remove("hidden");
+    if (warning) warning.classList.add("hidden");
+  } else {
+    currentUserId = null;
+
+    const form = document.getElementById("form-avaliacao-wrapper");
+    const warning = document.getElementById("login-warning");
+
+    if (form) form.classList.add("hidden");
+    if (warning) warning.classList.remove("hidden");
+  }
+}
+// Lógica Visual das Estrelas do Input
+function iniciarSistemaEstrelas() {
+  const stars = document.querySelectorAll(".rating-input .star-icon");
+  const ratingInput = document.getElementById("rating-value");
+  if (!ratingInput) return; // Sai se não houver o campo de estrelas
+
+  stars.forEach((star) => {
+    star.addEventListener("click", function () {
+      const valor = this.getAttribute("data-value");
+      document.getElementById("rating-value").value = valor;
+
+      // Pinta as estrelas
+      stars.forEach((s) => {
+        if (s.getAttribute("data-value") <= valor) {
+          s.classList.add("star-filled");
+        } else {
+          s.classList.remove("star-filled");
+        }
+      });
+    });
+  });
+}
+
+async function carregarAvaliacoes() {
+  const container = document.getElementById("lista-comentarios");
+  const filtroElement = document.getElementById("filtro-stars");
+
+  // Se não estivermos na página que tem as avaliações, sai da função silenciosamente
+  if (!container || !filtroElement) return;
+
+  const filtro = filtroElement.value;
+
+  container.style.animation = "none";
+  container.innerHTML =
+    '<p class="loading-msg" style="color:white; width:100vw">Carregando...</p>';
+
+  try {
+    const res = await fetch(`/api/avaliar/listar?order=${filtro}`);
+    const data = await res.json();
+
+    // Salva na global para o modal usar (conforme solicitado anteriormente)
+    window.reviewsCarregadas = data;
+
+    container.innerHTML = "";
+    if (data.length === 0) {
+      container.innerHTML =
+        '<p style="color:white; width:100vw">Nenhuma avaliação encontrada.</p>';
+      return;
+    }
+
+    const createCardHTML = (review) => {
+      const estrelasHTML =
+        "★".repeat(review.stars) + "☆".repeat(5 - review.stars);
+      return `
+        <div class="review-card" onclick="prepararEAbrirModal(${review.id})" style="cursor: pointer;">
+            <div class="review-header">
+                <span class="review-author">${review.author}</span>
+                <div class="review-stars">${estrelasHTML}</div>
+            </div>
+            <p class="review-text" style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                ${review.coment}
+            </p>
+            <span class="review-date">${review.date}</span>
+        </div>
+      `;
+    };
+
+    const cardsHTML = data.map((review) => createCardHTML(review)).join("");
+    container.innerHTML = cardsHTML + cardsHTML;
+
+    const duration = Math.max(20, data.length * 5);
+    container.style.animation = `scroll-left ${duration}s linear infinite`;
+  } catch (error) {
+    console.error("Erro ao buscar avaliações:", error);
+  }
+}
+
+// NOVA FUNÇÃO: Faz a ponte entre o clique e o modal
+window.prepararEAbrirModal = function (id) {
+  // Use explicitamente window.reviewsCarregadas para evitar o conflito com a variável do topo
+  const review = window.reviewsCarregadas
+    ? window.reviewsCarregadas.find((r) => r.id === id)
+    : null;
+
+  if (review) {
+    window.abrirModalDetalhes(review);
+  } else {
+    console.warn("Avaliação não encontrada na memória para o ID:", id);
+  }
+};
+
+async function enviarAvaliacao() {
+  const stars = document.getElementById("rating-value").value;
+  const coment = document.getElementById("texto-avaliacao").value;
+  const token = localStorage.getItem("access_token");
+
+  if (stars == 0)
+    return showToast("Por favor, selecione uma nota (estrelas).", "warning");
+  if (!coment.trim()) return showToast("Escreva um comentário.", "warning");
+
+  const res = await fetch("/api/avaliar", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ stars: stars, coment: coment }),
+  });
+
+  const data = await res.json();
+
+  if (res.ok) {
+    showToast("Avaliação enviada!", "success");
+    document.getElementById("texto-avaliacao").value = "";
+    document.getElementById("texto-avaliacao").value = "";
+
+    // 2. RESETA AS ESTRELAS (Adicione isso aqui)
+    document.getElementById("rating-value").value = "0"; // Zera o valor oculto
+
+    // Remove a classe de brilho de todas as estrelas
+    document.querySelectorAll(".rating-input .star-icon").forEach((star) => {
+      star.classList.remove("star-filled");
+    });
+    carregarAvaliacoes(); // Recarrega a lista
+  } else {
+    showToast(data.error || "Erro ao enviar.", "error");
+  }
+}
+
+async function deletarMinhaAvaliacao(id) {
+  if (!confirm("Deseja realmente apagar seu comentário?")) return;
+
+  const token = localStorage.getItem("access_token");
+  const res = await fetch(`/api/avaliar/${id}`, {
+    method: "DELETE",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (res.ok) {
+    carregarAvaliacoes();
+  } else {
+    showToast("Erro ao deletar.", "error");
+  }
+}
+// --- SISTEMA DE MODAL DE AVALIAÇÃO ---
+
+// =============================================================================
+//  SISTEMA DE MODAL DE AVALIAÇÃO (MODO SEGURO)
+// =============================================================================
+
+let currentReviewId = null;
+
+// 1. Funções do Modal
+window.abrirModalDetalhes = function (review) {
+  currentReviewId = review.id;
+  const modal = document.getElementById("modal-review-overlay");
+  if (!modal) return;
+
+  document.getElementById("modal-current-id").value = review.id;
+  document.getElementById("modal-author-name").innerText = review.author;
+  document.getElementById("modal-review-date").innerText = review.date;
+  document.getElementById("modal-review-text").innerText = review.coment;
+  document.getElementById("modal-stars-display").innerText =
+    "★".repeat(review.stars) + "☆".repeat(5 - review.stars);
+
+  document.getElementById("edit-comment-input").value = review.coment;
+  document.getElementById("edit-stars-input").value = review.stars;
+
+  const ownerActions = document.getElementById("modal-owner-actions");
+  cancelarEdicao();
+
+  if (currentUserId && String(review.user_id) === String(currentUserId)) {
+    ownerActions?.classList.remove("hidden");
+  } else {
+    ownerActions?.classList.add("hidden");
+  }
+
+  modal.classList.remove("hidden");
+  modal.style.display = "flex";
+};
+
+window.fecharModalAvaliacao = function () {
+  const modal = document.getElementById("modal-review-overlay");
+  if (modal) modal.classList.add("hidden");
+};
+
+// 2. Lógica de Edição e Deleção no Modal
+window.ativarEdicao = function () {
+  document.getElementById("modal-review-text")?.classList.add("hidden");
+  document.getElementById("modal-edit-area")?.classList.remove("hidden");
+  document.getElementById("btn-edit-mode")?.classList.add("hidden");
+  document.getElementById("btn-delete-modal")?.classList.add("hidden");
+  document.getElementById("btn-save-edit")?.classList.remove("hidden");
+  document.getElementById("btn-cancel-edit")?.classList.remove("hidden");
+};
+
+window.cancelarEdicao = function () {
+  document.getElementById("modal-review-text")?.classList.remove("hidden");
+  document.getElementById("modal-edit-area")?.classList.add("hidden");
+  document.getElementById("btn-edit-mode")?.classList.remove("hidden");
+  document.getElementById("btn-delete-modal")?.classList.remove("hidden");
+  document.getElementById("btn-save-edit")?.classList.add("hidden");
+  document.getElementById("btn-cancel-edit")?.classList.add("hidden");
+};
+
+window.salvarEdicao = async function () {
+  const novoTexto = document.getElementById("edit-comment-input")?.value;
+  const novasStars = document.getElementById("edit-stars-input")?.value;
+  const token = localStorage.getItem("access_token");
+
+  if (!novoTexto?.trim())
+    return showToast("O comentário não pode ficar vazio.", "warning");
+
+  try {
+    const res = await fetch(`/api/avaliar/${currentReviewId}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ coment: novoTexto, stars: novasStars }),
+    });
+
+    if (res.ok) {
+      showToast("Avaliação atualizada!", "success");
+      fecharModalAvaliacao();
+      carregarAvaliacoes();
+    } else {
+      const data = await res.json();
+      showToast(data.error || "Erro ao atualizar.", "error");
+    }
+  } catch (e) {
+    showToast("Erro de conexão.", "error");
+  }
+};
+
+window.deletarDoModal = async function () {
+  if (confirm("Tem certeza que deseja apagar sua avaliação?")) {
+    await deletarMinhaAvaliacao(currentReviewId);
+    fecharModalAvaliacao();
+  }
+};
+
+// 3. Listeners e Exportações Globais
+const reviewOverlay = document.getElementById("modal-review-overlay");
+if (reviewOverlay) {
+  reviewOverlay.addEventListener("click", function (e) {
+    if (e.target === this) fecharModalAvaliacao();
+  });
+}
+
+// Garante que todas as funções importantes estão no objeto window
+window.enviarAvaliacao = enviarAvaliacao;
+window.deletarMinhaAvaliacao = deletarMinhaAvaliacao;
+window.carregarAvaliacoes = carregarAvaliacoes;
+window.iniciarSistemaEstrelas = iniciarSistemaEstrelas;
+window.prepararEAbrirModal = prepararEAbrirModal;

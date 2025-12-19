@@ -97,6 +97,7 @@ def create_app():
     from .routes.routes_chat import bp_chat
     from .routes.routes_config import bp_config
     from .routes.routes_upload import bp_upload
+    from .routes.routes_coment import bp_coment
 
     app.register_blueprint(bp_menu, url_prefix='/api/menu')
     app.register_blueprint(bp_orders, url_prefix='/api/orders')
@@ -107,7 +108,8 @@ def create_app():
     app.register_blueprint(bp_config, url_prefix='/api/config')
     app.register_blueprint(bp_delivery, url_prefix='/api/delivery')
     app.register_blueprint(bp_reports, url_prefix='/api/reports')
-
+    app.register_blueprint(bp_coment, url_prefix='/api/avaliar')
+    
     if not os.path.exists(app.config['UPLOAD_FOLDER']):
         os.makedirs(app.config['UPLOAD_FOLDER'])
     app.register_blueprint(bp_upload, url_prefix='/api/upload')

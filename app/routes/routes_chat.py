@@ -20,7 +20,7 @@ def get_my_messages():
 @jwt_required()
 def send_message():
     user_id = get_jwt_identity()
-    data = request.get_json()
+    data = request.get_json() 
     try:
         msg = chat_service.send_message_logic(user_id, data.get('message'), is_admin=False)
         return jsonify(msg), 201

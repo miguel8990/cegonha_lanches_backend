@@ -1,7 +1,7 @@
 // site/js/auth.js
 import { loginUser, API_BASE_URL, fetchCurrentUser } from "./api.js";
-import { openAuthModal, showToast } from "./main.js";
-
+import { openAuthModal } from "./main.js";
+import { showToast } from "./utils.js";
 // ==========================================
 //  GESTÃO DE SESSÃO (Interface Visual)
 //  Nota: O Token real fica num Cookie HttpOnly invisível ao JS.

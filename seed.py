@@ -1,6 +1,6 @@
 from app import create_app
 from app.extensions import db
-from app.models import Product, User, ChatMessage, Address
+from app.models import Product, User, ChatMessage, Address, StoreSchedule, Coments
 from werkzeug.security import generate_password_hash
 import json
 import os
@@ -336,6 +336,7 @@ def seed_database():
         # CRUCIAL: Este comando cria as tabelas no banco se elas não existirem.
         # Sem isso, o erro 'relation product does not exist' continuará.
         db.create_all()
+        print("Novas tabelas criadas")
 
 
 

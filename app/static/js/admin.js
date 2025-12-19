@@ -26,7 +26,7 @@ import {
   fetchOrderDossier,
 } from "./api.js";
 import { getSession, clearSession, logout } from "./auth.js";
-import { showToast } from "./main.js";
+import { showToast } from "./utils.js";
 
 // --- Variáveis de Estado ---
 let chatUserIdAtivo = null;
@@ -764,26 +764,32 @@ function handleAdminChatKey(e) {
 //  ABA 4: CONFIGURAÇÕES
 // =============================================================================
 
+// 1. Unifica a troca de abas de configuração
 function switchConfigTab(tabName) {
-  document
-    .querySelectorAll(".config-tab-btn")
-    .forEach((btn) => btn.classList.remove("active"));
-  // Gambiarra pra achar o botão clicado
-  const btn = Array.from(document.querySelectorAll(".config-tab-btn")).find(
-    (b) => b.textContent.toLowerCase().includes(tabName)
-  );
-  if (btn) btn.classList.add("active");
+  // Gerencia o estado visual dos botões
+  document.querySelectorAll(".config-tab-btn").forEach((btn) => {
+    btn.classList.remove("active");
+    if (btn.getAttribute("onclick").includes(`'${tabName}'`)) {
+      btn.classList.add("active");
+    }
+  });
 
-  document
-    .querySelectorAll(".config-subpanel")
-    .forEach((el) => (el.style.display = "none"));
+  // Esconde todos os subpainéis
+  document.querySelectorAll(".config-subpanel").forEach((el) => {
+    el.style.display = "none";
+  });
 
+  // Mostra o painel correto (usando o prefixo config- definido no HTML)
   const target = document.getElementById(`config-${tabName}`);
-  if (target) target.style.display = "block";
+  if (target) {
+    target.style.display = "block";
+  }
 
+  // Carrega os dados automaticamente
   if (tabName === "coupons") carregarCuponsAdmin();
   if (tabName === "users") carregarUsuariosAdmin();
   if (tabName === "schedule") carregarHorariosAdmin();
+  if (tabName === "reviews") carregarAvaliacoesAdmin();
 }
 
 async function carregarCuponsAdmin() {
@@ -1415,57 +1421,165 @@ function aplicarFiltroRelatorio() {
   fecharModalFiltroRelatorio();
 }
 
-// =============================================================================
-//  EXPOSIÇÃO GLOBAL (PARA O HTML ACESSAR)
-// =============================================================================
+// Função para alternar abas
+function openConfigTab(tabName) {
+  // Esconde todos
+  document.getElementById("tab-horarios").style.display = "none";
+  document.getElementById("tab-avaliacoes").style.display = "none";
 
-window.switchPanel = switchPanel;
-window.adminLogout = adminLogout;
-window.carregarCozinha = carregarCozinha;
-window.moverParaPreparo = moverParaPreparo;
-window.moverParaEntrega = moverParaEntrega;
-window.concluirPedidoDefinitivo = concluirPedidoDefinitivo;
-window.carregarPedidosAdmin = carregarPedidosAdmin;
-window.mudarStatus = mudarStatus;
-window.carregarMenuAdmin = carregarMenuAdmin;
-window.toggleProd = toggleProd;
-window.openProductModal = openProductModal;
-window.editarProduto = editarProduto;
-window.closeProductModal = closeProductModal;
-window.addDetailRow = addDetailRow;
-window.removeDetailRow = removeDetailRow;
-window.deletarProduto = deletarProduto;
-window.closeSecurityModal = closeSecurityModal;
-window.executarDelecao = executarDelecao;
-window.carregarListaConversas = carregarListaConversas;
-window.selecionarChat = selecionarChat;
-window.carregarChatAtivo = carregarChatAtivo;
-window.enviarRespostaAdmin = enviarRespostaAdmin;
-window.handleAdminChatKey = handleAdminChatKey;
-window.switchConfigTab = switchConfigTab;
-window.carregarCuponsAdmin = carregarCuponsAdmin;
-window.toggleNewCouponForm = toggleNewCouponForm;
-window.deletarCupom = deletarCupom;
-window.carregarUsuariosAdmin = carregarUsuariosAdmin;
-window.abrirGaleriaNuvem = abrirGaleriaNuvem;
-window.fecharGaleriaNuvem = fecharGaleriaNuvem;
-window.selecionarImagemCloud = selecionarImagemCloud;
-window.apagarImagemCloud = apagarImagemCloud;
-window.carregarBairrosAdmin = carregarBairrosAdmin;
-window.adicionarBairro = adicionarBairro;
-window.apagarBairro = apagarBairro;
-window.imprimirComanda = imprimirComanda;
-window.carregarHorariosAdmin = carregarHorariosAdmin;
-window.salvarHorarios = salvarHorarios;
-window.carregarDashboard = carregarDashboard;
-window.abrirDossie = abrirDossie;
-window.fecharDossie = fecharDossie;
-window.abrirModalFiltro = abrirModalFiltro;
-window.fecharModalFiltro = fecharModalFiltro;
-window.toggleDatasManuais = toggleDatasManuais;
-window.aplicarFiltros = aplicarFiltros;
-window.limparFiltros = limparFiltros;
-window.abrirModalFiltroRelatorio = abrirModalFiltroRelatorio;
-window.fecharModalFiltroRelatorio = fecharModalFiltroRelatorio;
-window.toggleDatasRelatorio = toggleDatasRelatorio;
-window.aplicarFiltroRelatorio = aplicarFiltroRelatorio;
+  // Remove classe active dos botões
+  document
+    .querySelectorAll(".config-tabs .tab-btn")
+    .forEach((b) => b.classList.remove("active"));
+
+  // Mostra o selecionado
+  document.getElementById(tabName).style.display = "block";
+  event.currentTarget.classList.add("active");
+
+  // Se for a aba de avaliações, carrega os dados
+  if (tabName === "tab-avaliacoes") {
+    carregarAvaliacoesAdmin();
+  }
+}
+
+// 2. Carrega as avaliações com a URL da API correta
+/**
+ * Carrega as avaliações dos clientes no painel administrativo.
+ * Ajustado para utilizar o padrão de cookies HttpOnly do sistema.
+ */
+async function carregarAvaliacoesAdmin() {
+  const tbody = document.getElementById("admin-reviews-tbody");
+  if (!tbody) return;
+
+  tbody.innerHTML = '<tr><td colspan="5">Carregando...</td></tr>';
+
+  try {
+    // Busca os dados usando o prefixo /api definido no api.js
+    // credentials: "include" é essencial para enviar o cookie de sessão
+    const res = await fetch("/api/avaliar/listar", {
+      method: "GET",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+
+    if (!res.ok) throw new Error("Falha na requisição");
+
+    const data = await res.json();
+
+    tbody.innerHTML = "";
+    if (!data || data.length === 0) {
+      tbody.innerHTML =
+        '<tr><td colspan="5">Nenhuma avaliação encontrada.</td></tr>';
+      return;
+    }
+
+    data.forEach((rev) => {
+      const row = `
+            <tr>
+                <td>${rev.date || "---"}</td>
+                <td>${rev.author || "Anônimo"}</td>
+                <td style="color: #f1c40f;">${rev.stars} ★</td>
+                <td><small>${rev.coment || "(Sem comentário)"}</small></td>
+                <td>
+                    <button onclick="window.deletarAvaliacaoAdmin(${
+                      rev.id
+                    })" class="btn-small" 
+                        style="background:#e74c3c; color:white; border:none; padding:5px 10px; border-radius:4px; cursor:pointer;">
+                        <i class="fa-solid fa-trash"></i> Excluir
+                    </button>
+                </td>
+            </tr>`;
+      tbody.innerHTML += row;
+    });
+  } catch (error) {
+    console.error("Erro ao carregar avaliações:", error);
+    tbody.innerHTML =
+      '<tr><td colspan="5" style="color:#e74c3c;">Erro ao carregar dados do servidor.</td></tr>';
+  }
+}
+
+/**
+ * Exclui uma avaliação permanentemente.
+ * @param {number} id - ID da avaliação
+ */
+async function deletarAvaliacaoAdmin(id) {
+  if (!confirm("ADMIN: Tem certeza que deseja excluir este comentário?"))
+    return;
+
+  try {
+    const res = await fetch(`/api/avaliar/admin/${id}`, {
+      method: "DELETE",
+      credentials: "include",
+    });
+
+    if (res.ok) {
+      showToast("Avaliação excluída com sucesso!", "success");
+      carregarAvaliacoesAdmin(); // Atualiza a lista
+    } else {
+      const data = await res.json();
+      showToast(data.error || "Erro ao excluir avaliação.", "error");
+    }
+  } catch (error) {
+    showToast("Erro de conexão com o servidor.", "error");
+  }
+}
+
+try {
+  window.switchPanel = switchPanel;
+  window.adminLogout = adminLogout;
+  window.carregarCozinha = carregarCozinha;
+  window.moverParaPreparo = moverParaPreparo;
+  window.moverParaEntrega = moverParaEntrega;
+  window.concluirPedidoDefinitivo = concluirPedidoDefinitivo;
+  window.carregarPedidosAdmin = carregarPedidosAdmin;
+  window.mudarStatus = mudarStatus;
+  window.carregarMenuAdmin = carregarMenuAdmin;
+  window.toggleProd = toggleProd;
+  window.openProductModal = openProductModal;
+  window.editarProduto = editarProduto;
+  window.closeProductModal = closeProductModal;
+  window.addDetailRow = addDetailRow;
+  window.removeDetailRow = removeDetailRow;
+  window.deletarProduto = deletarProduto;
+  window.closeSecurityModal = closeSecurityModal;
+  window.executarDelecao = executarDelecao;
+  window.carregarListaConversas = carregarListaConversas;
+  window.selecionarChat = selecionarChat;
+  window.carregarChatAtivo = carregarChatAtivo;
+  window.enviarRespostaAdmin = enviarRespostaAdmin;
+  window.handleAdminChatKey = handleAdminChatKey;
+  window.switchConfigTab = switchConfigTab;
+  window.carregarCuponsAdmin = carregarCuponsAdmin;
+  window.toggleNewCouponForm = toggleNewCouponForm;
+  window.deletarCupom = deletarCupom;
+  window.carregarUsuariosAdmin = carregarUsuariosAdmin;
+  window.abrirGaleriaNuvem = abrirGaleriaNuvem;
+  window.fecharGaleriaNuvem = fecharGaleriaNuvem;
+  window.selecionarImagemCloud = selecionarImagemCloud;
+  window.apagarImagemCloud = apagarImagemCloud;
+  window.carregarBairrosAdmin = carregarBairrosAdmin;
+  window.adicionarBairro = adicionarBairro;
+  window.apagarBairro = apagarBairro;
+  window.imprimirComanda = imprimirComanda;
+  window.carregarHorariosAdmin = carregarHorariosAdmin;
+  window.salvarHorarios = salvarHorarios;
+  window.carregarDashboard = carregarDashboard;
+  window.abrirDossie = abrirDossie;
+  window.fecharDossie = fecharDossie;
+  window.abrirModalFiltro = abrirModalFiltro;
+  window.fecharModalFiltro = fecharModalFiltro;
+  window.toggleDatasManuais = toggleDatasManuais;
+  window.aplicarFiltros = aplicarFiltros;
+  window.limparFiltros = limparFiltros;
+  window.abrirModalFiltroRelatorio = abrirModalFiltroRelatorio;
+  window.fecharModalFiltroRelatorio = fecharModalFiltroRelatorio;
+  window.toggleDatasRelatorio = toggleDatasRelatorio;
+  window.aplicarFiltroRelatorio = aplicarFiltroRelatorio;
+  window.openConfigTab = openConfigTab;
+  window.carregarAvaliacoesAdmin = carregarAvaliacoesAdmin;
+  window.deletarAvaliacaoAdmin = deletarAvaliacaoAdmin;
+} catch (e) {
+  console.error("Erro ao expor funções globais do Admin:", e);
+}

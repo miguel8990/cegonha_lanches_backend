@@ -163,6 +163,26 @@ class Coupon(db.Model):
     is_active = db.Column(db.Boolean, default=True)
 
 
+class Coments(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    coment = db.Column(db.Text, nullable=True)
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+    stars = db.Column(db.Integer, nullable=False)
+    user = db.relationship('User', backref='coments', lazy=True)
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "user_id": self.user_id,
+            "author": self.user.name if self.user else "Usuário Desconhecido",
+            "coment": self.coment,
+            "stars": self.stars,
+            "date": self.timestamp.strftime("%d/%m/%Y %H:%M") # Formata a data para BR
+        }
+
+
+
 # ==============================================================================
 # 🛡️ SEGURANÇA: SANITIZAÇÃO AUTOMÁTICA (XSS PROTECTION)
 # ==============================================================================
@@ -203,3 +223,6 @@ event.listen(Order.neighborhood, 'set', sanitize_text, retval=True)
 event.listen(Address.street, 'set', sanitize_text, retval=True)
 event.listen(Address.complement, 'set', sanitize_text, retval=True)
 event.listen(Address.neighborhood, 'set', sanitize_text, retval=True)
+
+
+event.listen(Coments.coment, 'set', sanitize_text, retval=True)

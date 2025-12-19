@@ -13,6 +13,8 @@
   --color-black: #1a1a1a;
   --color-gray: #333333;
   --color-text: #fdfbf7;
+  --star-glow: #ffd700; /* Amarelo Ouro Padrão */
+  --star-bright: #fff2cc; /* Miolo quase branco (para parecer luz) */
 
   /* --- TIPOGRAFIA --- */
   --font-main: "Poppins", sans-serif;
@@ -1048,6 +1050,610 @@ footer {
   }
   .hamburger {
     display: none;
+  }
+}
+
+/* =========================================
+   SEÇÃO DE AVALIAÇÕES (DARK MODE & PREMIUM)
+   ========================================= */
+
+/* Container Principal */
+.reviews-container {
+  padding: 60px 20px;
+  background-color: var(--color-black); /* Fundo preto padrão */
+  text-align: center;
+  border-top: 1px solid #222; /* Divisão sutil */
+}
+
+.reviews-container h2 {
+  color: #fff;
+  margin-bottom: 40px;
+}
+
+/* GRID DE CARDS */
+.reviews-grid {
+  display: grid;
+  gap: 25px;
+  margin-bottom: 50px;
+  grid-template-columns: 1fr; /* Mobile First */
+}
+
+@media (min-width: 768px) {
+  .reviews-grid {
+    grid-template-columns: repeat(
+      auto-fill,
+      minmax(300px, 1fr)
+    ); /* Responsivo inteligente */
+  }
+}
+
+/* --- CARD DE AVALIAÇÃO (Visual Glass/Dark) --- */
+.review-card {
+  background-color: #1e1e1e; /* Cinza escuro */
+  padding: 25px;
+  border-radius: 16px; /* Cantos arredondados */
+  border: 1px solid rgba(255, 255, 255, 0.05); /* Borda muito fina */
+  text-align: left;
+  position: relative;
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+}
+
+/* Efeito Hover no Card */
+.review-card:hover {
+  transform: translateY(-5px); /* Levanta levemente */
+  border-color: rgba(242, 201, 76, 0.3); /* Brilho dourado na borda */
+  box-shadow: 0 15px 30px rgba(0, 0, 0, 0.5);
+  background-color: #252525;
+}
+
+/* Cabeçalho do Card */
+.review-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  padding-bottom: 10px;
+}
+
+.review-author {
+  font-weight: 700;
+  color: #fff; /* Nome em branco */
+  font-size: 1.05rem;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Ícone de Usuário antes do nome (Opcional, via CSS pseudo-element) */
+.review-author::before {
+  content: "\f007"; /* FontAwesome User Icon */
+  font-family: "Font Awesome 6 Free";
+  font-weight: 900;
+  color: var(--color-gold);
+  background: rgba(242, 201, 76, 0.1);
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  font-size: 0.8rem;
+}
+
+.review-stars {
+  color: var(--color-gold);
+  font-size: 1rem;
+  letter-spacing: 2px;
+}
+
+.review-text {
+  color: #ccc; /* Texto cinza claro para leitura */
+  font-size: 0.95rem;
+  line-height: 1.6;
+  margin-bottom: 15px;
+  font-style: italic;
+}
+
+.review-date {
+  font-size: 0.75rem;
+  color: #666;
+  display: block;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+/* Botão Lixeira (Delete) */
+.btn-delete-review {
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+  background: rgba(217, 48, 37, 0.1);
+  border: 1px solid rgba(217, 48, 37, 0.3);
+  color: var(--color-red);
+  width: 35px;
+  height: 35px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+}
+
+.btn-delete-review:hover {
+  background: var(--color-red);
+  color: white;
+  transform: scale(1.1) rotate(10deg);
+  box-shadow: 0 0 10px rgba(217, 48, 37, 0.5);
+}
+
+/* --- FORMULÁRIO DE AVALIAÇÃO (NOVO ESTILO) --- */
+.review-form-box {
+  max-width: 600px;
+  margin: 40px auto 0;
+  background-color: #1a1a1a;
+  padding: 30px;
+  border-radius: 16px;
+  border: 1px solid var(--color-gold); /* Destaque Dourado */
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Brilho de fundo no form */
+.review-form-box::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--color-gold),
+    transparent
+  );
+}
+
+.review-form-box h3 {
+  color: var(--color-gold);
+  margin-bottom: 20px;
+  font-size: 1.5rem;
+}
+
+/* Estrelas Interativas (Input) */
+.rating-input {
+  font-size: 2.5rem;
+  color: #333; /* Estrela apagada escura */
+  cursor: pointer;
+  margin-bottom: 20px;
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  transition: color 0.2s;
+  flex-direction: row-reverse;
+}
+
+.rating-input .star-icon {
+  transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.rating-input .star-icon:hover {
+  transform: scale(1.3);
+  color: #ffe066; /* Amarelo claro no hover */
+}
+
+/* Classe aplicada via JS */
+.star-filled {
+  color: var(--color-gold) !important;
+  text-shadow: 0 0 15px rgba(242, 201, 76, 0.6);
+}
+
+/* Campo de Texto */
+#texto-avaliacao {
+  width: 100%;
+  height: 100px;
+  margin-bottom: 20px;
+  padding: 15px;
+  background-color: #121212; /* Fundo bem escuro */
+  border: 1px solid #444;
+  border-radius: 12px;
+  color: #fff;
+  resize: none;
+  font-family: inherit;
+  font-size: 1rem;
+  transition: 0.3s;
+}
+
+#texto-avaliacao:focus {
+  outline: none;
+  border-color: var(--color-gold);
+  box-shadow: 0 0 0 3px rgba(242, 201, 76, 0.1);
+}
+
+/* Botão Enviar (Animado) */
+.review-form-box button {
+  width: 100%;
+  padding: 14px;
+  font-size: 1.1rem;
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  box-shadow: 0 4px 15px rgba(217, 48, 37, 0.3);
+}
+
+/* Aviso de Login */
+.login-warning {
+  margin-top: 30px;
+  padding: 20px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  border: 1px dashed #555;
+  color: #aaa;
+}
+
+.login-warning a {
+  color: var(--color-gold);
+  text-decoration: none;
+  font-weight: bold;
+}
+
+.login-warning a:hover {
+  text-decoration: underline;
+}
+
+/* Utilitário para esconder elementos */
+.hidden {
+  display: none !important;
+}
+
+/* --- FILTRO --- */
+.reviews-filter {
+  margin-bottom: 20px;
+  display: inline-block;
+}
+
+.reviews-filter select {
+  background: #1e1e1e;
+  color: #fff;
+  border: 1px solid #444;
+  padding: 8px 15px;
+  border-radius: 20px;
+  outline: none;
+  cursor: pointer;
+}
+
+/* --- CARROSSEL CONTAINER (Janela de Visualização) --- */
+.carousel-container {
+  width: 100%;
+  overflow: hidden; /* Esconde o que sai da tela */
+  position: relative;
+  padding: 20px 0;
+  /* Gradiente nas laterais para dar efeito de fade */
+  mask-image: linear-gradient(
+    to right,
+    transparent,
+    black 10%,
+    black 90%,
+    transparent
+  );
+  -webkit-mask-image: linear-gradient(
+    to right,
+    transparent,
+    black 10%,
+    black 90%,
+    transparent
+  );
+}
+
+/* --- CARROSSEL TRACK (A Pista que se move) --- */
+.carousel-track {
+  display: flex;
+  gap: 25px;
+  width: max-content; /* Largura baseada no conteúdo total */
+  /* A animação será controlada via JS para calcular o tempo baseado na quantidade */
+  animation: scroll-left 60s linear infinite;
+}
+
+/* Pausa a animação quando o usuário passa o mouse para ler/controlar */
+.carousel-track:hover {
+  animation-play-state: paused;
+}
+
+/* Card no Carrossel (Tamanho Fixo) */
+.review-card {
+  min-width: 300px; /* Tamanho fixo é essencial para carrossel */
+  max-width: 300px;
+  /* ... mantenha seus estilos de visual (background, border, etc) ... */
+  flex-shrink: 0; /* Impede que o card encolha */
+}
+
+/* A ANIMAÇÃO */
+@keyframes scroll-left {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    /* Movemos -50% porque vamos duplicar o conteúdo no JS */
+    transform: translateX(-50%);
+  }
+}
+
+/* MOBILE */
+@media (max-width: 768px) {
+  .review-card {
+    min-width: 260px; /* Um pouco menor no celular */
+  }
+}
+
+.star-filled,
+.review-stars,
+.rating-input .star-icon:hover,
+.rating-input .star-icon:hover ~ .star-icon {
+  color: var(--star-glow) !important;
+
+  /* O Segredo do Brilho: Camadas de Sombra */
+  text-shadow: 0 0 5px var(--star-glow),
+    /* Brilho curto */ 0 0 15px var(--star-glow),
+    /* Brilho médio */ 0 0 30px rgba(255, 215, 0, 0.6); /* Aura externa */
+
+  /* Leve pulsada para parecer vivo (Opcional, se achar muito remova) */
+  animation: star-pulse 3s infinite alternate;
+}
+
+/* Animação suave de pulsação de luz */
+@keyframes star-pulse {
+  from {
+    text-shadow: 0 0 5px var(--star-glow), 0 0 15px var(--star-glow);
+  }
+  to {
+    text-shadow: 0 0 10px var(--star-glow), 0 0 25px var(--star-glow),
+      0 0 40px rgba(255, 215, 0, 0.8);
+  }
+}
+
+/* Ajuste específico para o formulário de input */
+.rating-input .star-icon {
+  transition: transform 0.2s, color 0.2s, text-shadow 0.2s;
+}
+
+/* Quando passa o mouse no formulário, a estrela cresce um pouco */
+.rating-input:hover .star-icon:hover {
+  transform: scale(1.3);
+  color: var(--star-bright) !important; /* Fica quase branca de tão forte */
+}
+
+/* --- MODAL DE AVALIAÇÃO --- */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.85); /* Fundo bem escuro */
+  backdrop-filter: blur(5px);
+  z-index: 9999;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+.modal-overlay:not(.hidden) {
+  opacity: 1;
+  pointer-events: all;
+}
+
+.modal-review-content {
+  background: #1a1a1a;
+  width: 90%;
+  max-width: 500px;
+  border-radius: 16px;
+  border: 1px solid var(--color-gold);
+  padding: 30px;
+  position: relative;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+  transform: scale(0.9);
+  transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.modal-overlay:not(.hidden) .modal-review-content {
+  transform: scale(1);
+}
+
+/* Header do Modal */
+.modal-header {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 20px;
+  border-bottom: 1px solid #333;
+  padding-bottom: 15px;
+}
+
+.user-avatar-placeholder {
+  width: 50px;
+  height: 50px;
+  background: #333;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-gold);
+  font-size: 1.2rem;
+}
+
+.user-info h3 {
+  margin: 0;
+  color: #fff;
+  font-size: 1.1rem;
+}
+.user-info span {
+  font-size: 0.8rem;
+  color: #888;
+}
+
+.modal-stars {
+  margin-left: auto;
+  color: var(--color-gold);
+  font-size: 1.2rem;
+  letter-spacing: 2px;
+}
+
+/* Corpo e Texto */
+#modal-review-text {
+  font-size: 1rem;
+  line-height: 1.6;
+  color: #ddd;
+  min-height: 80px;
+}
+
+#edit-comment-input {
+  width: 100%;
+  height: 120px;
+  background: #111;
+  border: 1px solid #444;
+  color: #fff;
+  padding: 10px;
+  border-radius: 8px;
+  margin-top: 10px;
+  resize: none;
+}
+
+.edit-stars-control select {
+  background: #222;
+  color: var(--color-gold);
+  padding: 5px;
+  border: 1px solid #444;
+  border-radius: 4px;
+}
+
+/* Botões de Ação */
+.modal-footer {
+  margin-top: 20px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+#modal-owner-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.btn-action {
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: bold;
+  border: none;
+  transition: 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.btn-edit {
+  background: #333;
+  color: #fff;
+}
+.btn-edit:hover {
+  background: #444;
+}
+
+.btn-delete {
+  background: rgba(220, 53, 69, 0.1);
+  color: #dc3545;
+}
+.btn-delete:hover {
+  background: #dc3545;
+  color: #fff;
+}
+
+.btn-save {
+  background: var(--color-gold);
+  color: #000;
+}
+.btn-cancel {
+  background: transparent;
+  color: #888;
+  border: 1px solid #444;
+}
+
+.btn-close-modal {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  background: none;
+  border: none;
+  color: #888;
+  font-size: 1.5rem;
+  cursor: pointer;
+}
+.btn-close-modal:hover {
+  color: #fff;
+}
+/* --- ADAPTAÇÃO PARA DISPOSITIVOS ATÉ 768px --- */
+@media (max-width: 768px) {
+  .modal-review-content {
+    padding: 20px;
+    width: 92%;
+  }
+
+  .modal-header {
+    flex-direction: column; /* Empilha as informações no tablet/celular */
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .modal-stars {
+    margin-left: 0;
+    font-size: 1.1rem;
+  }
+
+  /* Área de Texto de Edição */
+  #edit-comment-input {
+    font-size: 16px; /* Evita zoom automático no iOS */
+    height: 140px;
+  }
+
+  /* Ajuste dos Botões de Ação para toque (Touch Friendly) */
+  #modal-owner-actions {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr 1fr; /* Dois botões lado a lado */
+    gap: 12px;
+  }
+
+  .btn-action {
+    width: 100%;
+    justify-content: center;
+    padding: 12px 10px;
+    font-size: 0.95rem;
+  }
+
+  /* Botões de Salvar e Cancelar ocupam a largura total quando ativos */
+  #btn-save-edit,
+  #btn-cancel-edit {
+    grid-column: span 2;
+  }
+
+  /* Ajuste fino para o botão de fechar (X) no topo */
+  .btn-close-modal {
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    background: none;
+    border: none;
+    color: #888;
+    font-size: 2rem;
+    cursor: pointer;
+    line-height: 1;
+    z-index: 10;
   }
 }
 
