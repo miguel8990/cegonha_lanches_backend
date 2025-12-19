@@ -331,12 +331,13 @@ def seed_database():
     # 'with app.app_context()' cria o ambiente necessário para o script acessar
     # as configurações do banco de dados do Flask.
     with app.app_context():
+        db.create_all()
+        print("Novas tabelas criadas")
         create_super_admin()
         print("1. Verificando/Criando tabelas...")
         # CRUCIAL: Este comando cria as tabelas no banco se elas não existirem.
         # Sem isso, o erro 'relation product does not exist' continuará.
-        db.create_all()
-        print("Novas tabelas criadas")
+        
 
 
 
