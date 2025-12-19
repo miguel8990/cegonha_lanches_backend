@@ -57,9 +57,11 @@ def create_super_admin():
                 print(f"   🗑️  Removendo antigo super: {u.email} (ID: {u.id})")
 
                 msgs_deleted = ChatMessage.query.filter_by(user_id=u.id).delete()
+                Address.query.filter_by(user_id=u.id).delete()
+                coments_deleted = Coments.query.filter_by(user_id=u.id).delete()
                 if msgs_deleted > 0:
                     print(f"      ↳ 💬 {msgs_deleted} mensagens de chat removidas.")
-                Address.query.filter_by(user_id=u.id).delete()
+                
                 db.session.delete(u)
                 count += 1
 
