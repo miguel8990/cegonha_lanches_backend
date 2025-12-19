@@ -2,12 +2,14 @@ from flask import Blueprint, jsonify, request
 from app.schemas import coupons_schema, coupon_schema, schedule_list_schema
 from app.decorators import admin_required
 from app.services import config_service # Importando o novo service
+from app.extensions import limiter
 
 bp_config = Blueprint('config', __name__)
 
 # --- ROTAS DE CUPONS ---
 
 @bp_config.route('/coupons/public', methods=['GET'])
+@limiter.limit("200 per hour", error_message="Muitas requisições, tente novamente mais tarde.")
 def list_public_coupons():
     """Rota pública para o carrinho verificar cupons disponíveis."""
     try:
@@ -17,6 +19,7 @@ def list_public_coupons():
         return jsonify({'error': 'Erro ao buscar cupons'}), 500
 
 @bp_config.route('/coupons', methods=['GET'])
+@limiter.limit("200 per hour", error_message="Muitas requisições, tente novamente mais tarde.")
 @admin_required()
 def list_coupons_admin():
     """Rota admin para ver todos os cupons."""
@@ -28,6 +31,7 @@ def list_coupons_admin():
 
 @bp_config.route('/coupons', methods=['POST'])
 @admin_required()
+@limiter.limit("200 per hour", error_message="Muitas requisições, tente novamente mais tarde.")
 def create_coupon():
     data = request.get_json()
     try:
@@ -40,6 +44,7 @@ def create_coupon():
 
 @bp_config.route('/coupons/<int:id>', methods=['DELETE'])
 @admin_required()
+@limiter.limit("200 per hour", error_message="Muitas requisições, tente novamente mais tarde.")
 def delete_coupon(id):
     try:
         config_service.delete_coupon_logic(id)
@@ -52,6 +57,7 @@ def delete_coupon(id):
 # --- ROTAS DE HORÁRIO (SCHEDULE) ---
 
 @bp_config.route('/schedule', methods=['GET'])
+@limiter.limit("200 per hour", error_message="Muitas requisições, tente novamente mais tarde.")
 def get_schedule():
     """Público: Retorna horários de funcionamento."""
     try:
@@ -62,6 +68,7 @@ def get_schedule():
 
 @bp_config.route('/schedule', methods=['PUT'])
 @admin_required()
+@limiter.limit("200 per hour", error_message="Muitas requisições, tente novamente mais tarde.")
 def update_schedule():
     """Admin: Atualiza grade de horários."""
     data = request.get_json()
@@ -77,6 +84,7 @@ def update_schedule():
 
 @bp_config.route('/users', methods=['GET'])
 @admin_required()
+@limiter.limit("200 per hour", error_message="Muitas requisições, tente novamente mais tarde.")
 def list_users_report():
     """
     Relatório de clientes + qtd de pedidos.

@@ -2517,8 +2517,13 @@ async function carregarAvaliacoes() {
 
     const cardsHTML = data.map((review) => createCardHTML(review)).join("");
     container.innerHTML = cardsHTML + cardsHTML;
+    const pixelsPorSegundo = 50;
+    const primeiroCard = container.querySelector(".review-card");
+    const gap = 25;
+    const largura_item = primeiroCard ? primeiroCard.offsetWidth + gap : 325;
 
-    const duration = Math.max(20, data.length * 5);
+    let duration = (data.length * largura_item) / pixelsPorSegundo;
+    if (duration < 10) duration = 15;
     container.style.animation = `scroll-left ${duration}s linear infinite`;
   } catch (error) {
     console.error("Erro ao buscar avaliações:", error);

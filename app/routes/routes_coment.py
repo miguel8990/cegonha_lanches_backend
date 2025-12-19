@@ -3,12 +3,13 @@ from flask_jwt_extended import jwt_required, get_jwt_identity
 from app.services.coment_service import (create_coment, get_all_coments,search_coment,
                                           delete_coment, delete_self_coment, update_coment)
 from app.decorators import admin_required
-
+from app.extensions import limiter
 
 bp_coment = Blueprint('avaliar', __name__)
 
 @bp_coment.route('', methods=['POST'])
 @jwt_required()
+@limiter.limit("30 per day", error_message="Muitas requisições, tente novamente mais tarde.")
 def avaliar_produto():
   dados = request.get_json()
   user_id = get_jwt_identity()
@@ -17,6 +18,7 @@ def avaliar_produto():
 
 
 @bp_coment.route('/listar', methods=['GET'])
+@limiter.limit("200 per hour", error_message="Muitas requisições, tente novamente mais tarde.")
 def listar_comentarios():
   order = request.args.get('order', 'recent')
   resultado = get_all_coments()
@@ -24,6 +26,7 @@ def listar_comentarios():
 
 @bp_coment.route('/pesquisar', methods=['GET'])
 @admin_required()
+@limiter.limit("200 per hour", error_message="Muitas requisições, tente novamente mais tarde.")
 def pesquisar_comentarios():
   dados = request.args
   resultado, status = search_coment(dados)
@@ -32,6 +35,7 @@ def pesquisar_comentarios():
 
 @bp_coment.route('/<int:comment_id>', methods=['DELETE'])
 @jwt_required()
+@limiter.limit("200 per hour", error_message="Muitas requisições, tente novamente mais tarde.")
 def deletar_minha_avaliacao(comment_id):
     current_user_id = get_jwt_identity()
     print(f"DEBUG ROTA: Usuário ID {current_user_id} tentando deletar Comentário {comment_id}") # <--- ADICIONE
@@ -42,6 +46,7 @@ def deletar_minha_avaliacao(comment_id):
 
 @bp_coment.route('/admin/<int:comment_id>', methods=['DELETE'])
 @admin_required()
+@limiter.limit("200 per hour", error_message="Muitas requisições, tente novamente mais tarde.")
 def deletar_avaliacao_admin(comment_id):
     
     
@@ -52,6 +57,7 @@ def deletar_avaliacao_admin(comment_id):
 
 @bp_coment.route('/<int:comment_id>', methods=['PUT'])
 @jwt_required()
+@limiter.limit("30 per hour", error_message="Muitas requisições, tente novamente mais tarde.")
 def editar_minha_avaliacao(comment_id):
     user_id = get_jwt_identity()
     dados = request.get_json()

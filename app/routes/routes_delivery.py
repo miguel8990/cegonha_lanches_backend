@@ -5,12 +5,14 @@ from app.schemas import neighborhoods_schema, neighborhood_schema
 from app.decorators import admin_required
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from ..services import delivery_service
+from app.extensions import limiter
 
 bp_delivery = Blueprint('delivery', __name__)
 
 
 # --- PÚBLICO (Para o Checkout) ---
 @bp_delivery.route('', methods=['GET'])
+@limiter.limit("200 per hour", error_message="Muitas requisições, tente novamente mais tarde.")
 def get_neighborhoods():
     # Retorna apenas os ativos para o cliente escolher
     bairros = Neighborhood.query.filter_by(is_active=True).order_by(Neighborhood.name).all()
@@ -20,6 +22,7 @@ def get_neighborhoods():
 # --- ADMIN (Gestão) ---
 @bp_delivery.route('/admin', methods=['GET'])
 @admin_required()
+@limiter.limit("200 per hour", error_message="Muitas requisições, tente novamente mais tarde.")
 def get_all_neighborhoods():
     # Retorna todos (ativos e inativos) para gestão
     bairros = Neighborhood.query.order_by(Neighborhood.name).all()
@@ -28,6 +31,7 @@ def get_all_neighborhoods():
 
 @bp_delivery.route('', methods=['POST'])
 @admin_required()
+@limiter.limit("200 per hour", error_message="Muitas requisições, tente novamente mais tarde.")
 def add_neighborhood():
     data = request.get_json()
     try:
@@ -42,6 +46,7 @@ def add_neighborhood():
 
 @bp_delivery.route('/<int:id>', methods=['PUT'])
 @admin_required()
+@limiter.limit("200 per hour", error_message="Muitas requisições, tente novamente mais tarde.")
 def update_neighborhood(id):
     data = request.get_json()
 
@@ -63,6 +68,7 @@ def update_neighborhood(id):
 
 @bp_delivery.route('/<int:id>', methods=['DELETE'])
 @admin_required()
+@limiter.limit("200 per hour", error_message="Muitas requisições, tente novamente mais tarde.")
 def delete_neighborhood(id):
     try:
         # Chama a lógica no service

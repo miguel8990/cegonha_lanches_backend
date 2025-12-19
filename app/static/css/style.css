@@ -3209,6 +3209,7 @@ ul.magic-text-body li span {
 /* A caixa principal do modal */
 .confirm-modal-content {
   max-width: 500px;
+  max-height: 85vh;
   width: 95%;
   background-color: #1e1e1e; /* Fundo Cinza Escuro (Dark Mode) */
   border-radius: 16px;
@@ -3216,6 +3217,44 @@ ul.magic-text-body li span {
   overflow: hidden;
   box-shadow: 0 15px 40px rgba(0, 0, 0, 0.6); /* Sombra mais forte */
   border: 1px solid #333; /* Borda sutil */
+  display: flex;
+  flex-direction: column;
+}
+
+#confirm-summary-body {
+  flex: 1; /* Ocupa todo o espaço que sobrar entre header e footer */
+  overflow-y: auto; /* Ativa a rolagem SÓ aqui */
+  padding: 20px;
+
+  /* Estilização da barra de rolagem */
+  scrollbar-width: thin;
+  scrollbar-color: #444 #1a1a1a;
+}
+
+@media (max-width: 768px) {
+  .confirm-modal-content {
+    max-width: 500px;
+    max-height: 85vh;
+    width: 95%;
+    background-color: #1e1e1e; /* Fundo Cinza Escuro (Dark Mode) */
+    border-radius: 16px;
+    padding: 0;
+    overflow: hidden;
+    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.6); /* Sombra mais forte */
+    border: 1px solid #333; /* Borda sutil */
+    display: flex;
+    flex-direction: column;
+  }
+
+  #confirm-summary-body {
+    flex: 1; /* Ocupa todo o espaço que sobrar entre header e footer */
+    overflow-y: auto; /* Ativa a rolagem SÓ aqui */
+    padding: 20px;
+
+    /* Estilização da barra de rolagem */
+    scrollbar-width: thin;
+    scrollbar-color: #444 #1a1a1a;
+  }
 }
 
 /* --- Cabeçalho (Título e X) --- */
@@ -3351,6 +3390,45 @@ ul.magic-text-body li span {
   background-color: #219d54;
   transform: translateY(-2px);
   box-shadow: 0 6px 20px rgba(39, 174, 96, 0.4);
+}
+
+@media (max-width: 768px) {
+  /* Garante que o container alinhe os botões */
+  .modal-actions {
+    display: flex;
+    gap: 10px; /* Espaço entre eles */
+    width: 100%;
+    padding: 0 15px 20px 15px; /* Ajuste de margem interna */
+  }
+
+  .btn-cancel,
+  .btn-confirm-final {
+    /* Remove larguras fixas */
+    width: auto;
+    height: auto;
+
+    /* Altura Mínima para toque (padrão UX Mobile) */
+    min-height: 50px;
+
+    /* Centraliza o texto */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    /* Tamanho da fonte legível */
+    font-size: 1rem;
+    padding: 10px;
+  }
+
+  /* O botão Cancelar ocupa 1 parte do espaço */
+  .btn-cancel {
+    flex: 1;
+  }
+
+  /* O botão Confirmar ocupa 1.5 ou 2 partes (fica maior visualmente) */
+  .btn-confirm-final {
+    flex: 1.5;
+  }
 }
 
 /* --- Correções do Modal de Pedidos --- */

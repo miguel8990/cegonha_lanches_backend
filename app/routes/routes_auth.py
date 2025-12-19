@@ -14,7 +14,7 @@ bp_auth = Blueprint('auth', __name__)
 # 📝 REGISTRO (CORRIGIDO)
 # =============================================================================
 @bp_auth.route('/register', methods=['POST'])
-@limiter.limit("5 per day")
+@limiter.limit("10 per hour", error_message="Muitas tentativas, tente novamente mais tarde.")
 def register():
     data = request.get_json()
     registro = auth_service.register_user(data)
@@ -45,7 +45,7 @@ def register():
 # 🔑 LOGIN (CORRIGIDO)
 # =============================================================================
 @bp_auth.route('/login', methods=['POST'])
-@limiter.limit("8 per hour", error_message="Muitas tentativas.")
+@limiter.limit("20 per hour", error_message="Muitas tentativas, tente novamente mais tarde.")
 def login():
     data = request.get_json()
     resultado = auth_service.login_user(data)
@@ -69,7 +69,7 @@ def login():
 # ✉️ CONFIRMAÇÃO DE EMAIL (UNIFICADA)
 # =============================================================================
 @bp_auth.route('/confirm-email', methods=['GET'])
-@limiter.limit("10 per hour", error_message="Muitas tentativas.")
+@limiter.limit("10 per hour", error_message="Muitas tentativas, tente novamente mais tarde.")
 def confirm_email():
     """
     Rota que valida o token, seta o cookie e redireciona para o site.
@@ -105,7 +105,7 @@ def confirm_email():
 # 🪄 MAGIC LINK - REQUEST
 # =============================================================================
 @bp_auth.route('/magic-login/request', methods=['POST'])
-@limiter.limit("8 per hour", error_message="Muitas tentativas.")
+@limiter.limit("10 per hour", error_message="Muitas tentativas, tente novamente mais tarde.")
 def request_magic_link():
     data = request.get_json()
     resultado = auth_service.magic_link(data)
@@ -127,6 +127,7 @@ def request_magic_link():
 # =============================================================================
 @bp_auth.route('/update', methods=['PUT'])
 @jwt_required()
+@limiter.limit("10 per hour", error_message="Muitas tentativas, tente novamente mais tarde.")
 def update_profile():
     user_id = get_jwt_identity()
     data = request.get_json()
@@ -142,7 +143,7 @@ def update_profile():
 # 🔐 GOOGLE AUTH (CORRIGIDO)
 # =============================================================================
 @bp_auth.route('/google', methods=['POST'])
-@limiter.limit("8 per hour", error_message="Muitas tentativas.")
+@limiter.limit("10 per hour", error_message="Muitas tentativas, tente novamente mais tarde.")
 def google_auth():
     data = request.get_json()
     credential_token = data.get('credential')
@@ -200,6 +201,7 @@ def logout():
 # =============================================================================
 @bp_auth.route('/me', methods=['GET'])
 @jwt_required()
+@limiter.limit("30 per hour", error_message="Muitas tentativas, tente novamente mais tarde.")
 def get_user_data():
     current_user_id = get_jwt_identity()
     user = User.query.get(current_user_id)
@@ -221,7 +223,7 @@ def get_user_data():
 # 🔑 RESET DE SENHA
 # =============================================================================
 @bp_auth.route('/forgot-password', methods=['POST'])
-@limiter.limit("6 per day", error_message="Muitas tentativas.")
+@limiter.limit("3 per hour", error_message="Muitas tentativas, tente novamente mais tarde.")
 def forgot_password():
     data = request.get_json()
     email = data.get('email')
@@ -231,6 +233,7 @@ def forgot_password():
 
 @bp_auth.route('/reset-password', methods=['POST'])
 @jwt_required()
+@limiter.limit("10 per hour", error_message="Muitas tentativas, tente novamente mais tarde.")
 def reset_password_confirm():
     user_id = get_jwt_identity()
     claims = get_jwt()
@@ -255,7 +258,7 @@ def reset_password_confirm():
 # =============================================================================
 @bp_auth.route('/admin/create', methods=['POST'])
 @super_admin_required()
-@limiter.limit("5 per hour")
+@limiter.limit("5 per hour", error_message="Muitas tentativas, tente novamente mais tarde.")
 def create_restaurant_admin():
     data = request.get_json()
     actor_id = get_jwt_identity()
@@ -272,6 +275,7 @@ def create_restaurant_admin():
 
 @bp_auth.route('/admin/dados', methods=['GET'])
 @super_admin_required()
+@limiter.limit("10 per hour", error_message="Muitas tentativas, tente novamente mais tarde.")
 def pegar_dados_admin():
     user_id = get_jwt_identity()
     user = User.query.get(user_id)

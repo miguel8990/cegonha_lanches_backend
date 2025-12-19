@@ -4,7 +4,7 @@ from flask_jwt_extended import jwt_required, get_jwt_identity
 from app.schemas import order_schema
 from ..decorators import admin_required
 from datetime import datetime  # <--- FALTAVA ISTO
-
+from app.extensions import limiter
 bp_orders = Blueprint('orders', __name__)
 
 
@@ -14,6 +14,7 @@ bp_orders = Blueprint('orders', __name__)
 
 @bp_orders.route('/create', methods=['POST'])
 @jwt_required()
+@limiter.limit("200 per hour", error_message="Muitas requisições, tente novamente mais tarde.")
 def create_order():
     data = request.get_json()
     user_id = get_jwt_identity()
@@ -33,6 +34,7 @@ def create_order():
 
 @bp_orders.route('/me', methods=['GET'])
 @jwt_required()
+@limiter.limit("200 per hour", error_message="Muitas requisições, tente novamente mais tarde.")
 def get_my_order():
     user_id = get_jwt_identity()
     order = services.order_service.get_order_logic(user_id)
@@ -41,6 +43,7 @@ def get_my_order():
 
 @bp_orders.route('/<int:order_id>/status', methods=['GET'])
 @jwt_required()
+@limiter.limit("200 per hour", error_message="Muitas requisições, tente novamente mais tarde.")
 def check_order_status(order_id):
     try:
         status_info = services.order_service.get_order_status_logic(order_id)
@@ -51,6 +54,7 @@ def check_order_status(order_id):
 
 @bp_orders.route('/<int:order_id>/cancel', methods=['PATCH'])
 @jwt_required()
+@limiter.limit("200 per hour", error_message="Muitas requisições, tente novamente mais tarde.")
 def cancel_order(order_id):
     user_id = get_jwt_identity()
     try:

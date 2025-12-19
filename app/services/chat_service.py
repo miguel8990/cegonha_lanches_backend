@@ -3,74 +3,105 @@ from ..schemas import chat_messages_schema, chat_message_schema
 from datetime import datetime, timedelta
 from sqlalchemy import func
 from ..extensions import socketio
+import bleach
+try:
+    from ..utils.bad_words import BLOCKLIST
+except ImportError:
+    BLOCKLIST = set() # Evita erro se o arquivo não existir
 
 SPAM_COOLDOWN_SECONDS = 2  # Tempo mínimo entre mensagens
 MAX_HISTORY_CHARS = 20000  # Limite de caracteres no histórico
 def send_message_logic(user_id, text, is_admin=False):
     """
-    Salva uma nova mensagem.
+    Salva uma nova mensagem com validação, sanitização e resposta automática.
     """
+    # 1. Validação Básica (Deve vir ANTES de qualquer processamento)
+    if not text or not isinstance(text, str) or not text.strip():
+        raise ValueError("Mensagem vazia.")
+    
+    if len(text) > 800:
+        raise ValueError("Mensagem muito grande.")
+
+    # 2. Sanitização (Remove HTML perigoso)
+    # Removemos a variável inútil 'coment'
+    clean_text = bleach.clean(text, tags=[], strip=True, attributes={}).strip()
+
+    # 3. Filtro de Palavras Impróprias
+    palavras_mensagem = set(clean_text.lower().split())
+    if BLOCKLIST.intersection(palavras_mensagem):
+        # CORREÇÃO: Lança erro em vez de retornar tupla HTTP
+        raise ValueError("Seu comentário contém palavras impróprias. Por favor, seja respeitoso.")
+
+    # 4. Verificação de Spam (Cooldown)
+    # Verifica apenas se há uma mensagem anterior
     last_msg = ChatMessage.query.filter_by(user_id=user_id) \
         .order_by(ChatMessage.timestamp.desc()) \
         .first()
 
-    if last_msg:
-        # Se não é admin e mandou mensagem muito rápido
-        if not is_admin:
-            time_diff = datetime.utcnow() - last_msg.timestamp
-            if time_diff.total_seconds() < SPAM_COOLDOWN_SECONDS:
-                raise ValueError("Você está enviando mensagens muito rápido. Aguarde um momento.")
+    if last_msg and not is_admin:
+        time_diff = datetime.utcnow() - last_msg.timestamp
+        if time_diff.total_seconds() < SPAM_COOLDOWN_SECONDS:
+            raise ValueError("Você está enviando mensagens muito rápido. Aguarde um momento.")
 
-    if not text or not text.strip():
-        raise ValueError("Mensagem vazia.")
-    if len(text) > 800:
-        raise ValueError("Mensagem muito grande")
-
+    # 5. Lógica de Primeira Mensagem
     is_first_message = False
     if not is_admin:
-        # Conta quantas mensagens esse usuário já tem
-        count = ChatMessage.query.filter_by(user_id=user_id).count()
-        if count == 0:
+        # Dica de Performance: Se last_msg for None, count é 0. Não precisa fazer query de count.
+        if not last_msg: 
             is_first_message = True
 
+    # 6. Persistência
+    try:
+        new_msg = ChatMessage(
+            user_id=user_id,
+            message=clean_text,
+            is_from_admin=is_admin,
+            timestamp=datetime.utcnow()
+        )
+        db.session.add(new_msg)
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        print(f"❌ Erro ao salvar mensagem: {e}")
+        raise ValueError("Erro interno ao salvar mensagem.")
 
-    new_msg = ChatMessage(
-        user_id=user_id,
-        message=text,
-        is_from_admin=is_admin
-    )
-    db.session.add(new_msg)
-    db.session.commit()
+    # 7. Pós-processamento
     if not is_admin:
-        _enforce_storage_limit(user_id)
+        try:
+            _enforce_storage_limit(user_id)
+        except Exception as e:
+            print(f"⚠️ Erro ao limpar histórico antigo: {e}")
+
     msg_dump = chat_message_schema.dump(new_msg)
     print(f"📡 Nova mensagem chat (User {user_id})")
     socketio.emit('chat_message', msg_dump)
 
+    # 8. Resposta Automática (Bot)
     if is_first_message:
-        # Busca o nome do usuário para personalizar
-        user = User.query.get(user_id)
-        primeiro_nome = user.name.split()[0] if user and user.name else "Cliente"
+        try:
+            user = User.query.get(user_id)
+            primeiro_nome = user.name.split()[0] if user and user.name else "Cliente"
 
-        bot_text = (
-            f"Olá, {primeiro_nome}! 👋 Bem-vindo ao chat do Cegonha Lanches.\n"
-            "Recebemos sua mensagem e um atendente irá respondê-lo em breve. "
-            "Enquanto isso, fique à vontade para consultar nosso cardápio!"
-        )
+            bot_text = (
+                f"Olá, {primeiro_nome}! 👋 Bem-vindo ao chat do Cegonha Lanches.\n"
+                "Recebemos sua mensagem e um atendente irá respondê-lo em breve. "
+                "Enquanto isso, fique à vontade para consultar nosso cardápio!"
+            )
 
-        # Cria a resposta do sistema (como se fosse admin)
-        auto_reply = ChatMessage(
-            user_id=user_id,
-            message=bot_text,
-            is_from_admin=True,  # Importante: aparece como mensagem do restaurante
-            timestamp=datetime.utcnow()  # + alguns milissegundos idealmente, mas o banco ordena
-        )
-        db.session.add(auto_reply)
-        db.session.commit()
+            auto_reply = ChatMessage(
+                user_id=user_id,
+                message=bot_text,
+                is_from_admin=True,
+                timestamp=datetime.utcnow()
+            )
+            db.session.add(auto_reply)
+            db.session.commit()
 
-        bot_msg_dump = chat_message_schema.dump(auto_reply)
-        socketio.emit('chat_message', bot_msg_dump)  # <
-
+            bot_msg_dump = chat_message_schema.dump(auto_reply)
+            socketio.emit('chat_message', bot_msg_dump)
+        except Exception as e:
+            print(f"❌ Erro ao enviar resposta automática: {e}")
+            # Não damos raise aqui para não cancelar a mensagem do usuário que já foi salva
 
     return msg_dump
 

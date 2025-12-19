@@ -126,6 +126,16 @@ body {
   padding: 10px;
   border-radius: 5px;
 }
+.btn-primary {
+  color: rgb(255, 255, 255);
+  background-color: #0f30ee;
+  height: 44px;
+  width: 190px;
+}
+.btn-primary:hover {
+  background-color: rgb(0, 255, 0);
+  transform: translateY(-2px);
+}
 
 .card-actions {
   display: flex;
@@ -138,6 +148,8 @@ body {
   border-radius: 4px;
   cursor: pointer;
   border: none;
+  height: 44px;
+  width: 122px;
 }
 .btn-next {
   background: var(--color-gold);
@@ -147,6 +159,8 @@ body {
   background: #333;
   color: var(--color-red);
   border: 1px solid var(--color-red);
+  height: 44px;
+  width: 122px;
 }
 
 /* --- TABELA DE PRODUTOS --- */

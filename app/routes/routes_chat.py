@@ -2,7 +2,7 @@ from flask import Blueprint, jsonify, request
 from app.services import chat_service
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from app.decorators import admin_required
-
+from app.extensions import limiter
 bp_chat = Blueprint('chat', __name__)
 
 
@@ -10,6 +10,7 @@ bp_chat = Blueprint('chat', __name__)
 
 @bp_chat.route('', methods=['GET'])
 @jwt_required()
+@limiter.limit("400 per hour", error_message="Muitas requisições, tente novamente mais tarde.")
 def get_my_messages():
     user_id = get_jwt_identity()
     msgs = chat_service.get_user_messages_logic(user_id)
@@ -18,6 +19,7 @@ def get_my_messages():
 
 @bp_chat.route('', methods=['POST'])
 @jwt_required()
+@limiter.limit("400 per hour", error_message="Muitas requisições, tente novamente mais tarde.")
 def send_message():
     user_id = get_jwt_identity()
     data = request.get_json() 
