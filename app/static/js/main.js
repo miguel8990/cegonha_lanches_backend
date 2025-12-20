@@ -27,6 +27,7 @@ import {
   initGoogleButton,
   logout as authLogout,
   verifySession,
+  getCurrentUserSecure,
 } from "./auth.js";
 
 import { showToast } from "./utils.js";
@@ -70,6 +71,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   verificarUsuarioLogado();
   carregarAvaliacoes();
   iniciarSistemaEstrelas();
+  initCookieConsent();
 
   // Verifica Login ao carregar
   checkLoginState();
@@ -259,42 +261,42 @@ window.toggleTroco = toggleTroco;
 
 // --- 1. AUTENTICAÇÃO ---
 
+// 1. Atualize a função checkLoginState
 function checkLoginState() {
-  const { token, user } = getSession();
+  // Pega dados da sessão (pode vir do LS ou da Memória)
+  const { logged, user } = getSession();
 
   const btnLogin = document.getElementById("btn-open-login");
   const profileArea = document.getElementById("user-profile-area");
   const nameDisplay = document.getElementById("user-name-display");
   const adminLink = document.getElementById("admin-link");
 
-  // --- PERSISTÊNCIA FORTE: Preenche sempre que tiver dados ---
-  if (user.name) {
-    const nameInput = document.getElementById("name");
-    if (nameInput) nameInput.value = user.name; // Preenche sempre
-  }
-  if (user.whatsapp) {
-    const phoneInput = document.getElementById("phone");
-    if (phoneInput) phoneInput.value = user.whatsapp; // Preenche sempre
+  // Preenchimento de formulários (Checkout/Perfil)
+  // Só preenche se tivermos os dados REAIS em memória (pós-load do verifySession)
+  const realUser = getCurrentUserSecure();
+  if (realUser) {
+    if (document.getElementById("name"))
+      document.getElementById("name").value = realUser.name || "";
+    if (document.getElementById("phone"))
+      document.getElementById("phone").value = realUser.whatsapp || "";
   }
 
-  // Lógica de Exibição (Logado vs Deslogado)
-  if (token && user.name) {
+  if (logged) {
+    // Logado
     if (btnLogin) btnLogin.style.display = "none";
     if (profileArea) profileArea.style.display = "flex";
-    if (nameDisplay) nameDisplay.innerText = `Olá, ${user.name.split(" ")[0]}`;
-    verificarUsuarioLogado();
+
+    // Nome vem do LocalStorage "light" ou da memória
+    if (nameDisplay && user.name) {
+      nameDisplay.innerText = `Olá, ${user.name.split(" ")[0]}`;
+    }
+
     if (adminLink) {
       adminLink.style.display =
         user.role === "admin" || user.role === "super_admin" ? "block" : "none";
     }
-    if (document.getElementById("lista-comentarios")) {
-      carregarAvaliacoes();
-    }
 
-    // Busca e preenche endereço ativo (Dispara a função corrigida acima)
-    if (user.id) {
-      fetchAddresses().then((list) => preencherCheckoutComAtivo(list));
-    }
+    verificarUsuarioLogado(); // Atualiza UI de avaliações
   } else {
     // Deslogado
     if (btnLogin) btnLogin.style.display = "flex";
@@ -2427,25 +2429,21 @@ let currentUserId = null;
 
 // Substitua a função antiga por esta no final do main.js
 function verificarUsuarioLogado() {
-  // Agora usamos getSession() que é a fonte da verdade do seu sistema
-  const { user } = getSession();
+  // Usa a versão segura para pegar o ID real
+  const realUser = getCurrentUserSecure();
 
-  if (user && user.id) {
-    currentUserId = user.id; // Atualiza a variável global para o botão de deletar funcionar
-
-    const form = document.getElementById("form-avaliacao-wrapper");
-    const warning = document.getElementById("login-warning");
-
-    if (form) form.classList.remove("hidden");
-    if (warning) warning.classList.add("hidden");
+  if (realUser && realUser.id) {
+    currentUserId = realUser.id; // Atualiza global
+    // ... mostra formulário de avaliação ...
+    document
+      .getElementById("form-avaliacao-wrapper")
+      ?.classList.remove("hidden");
+    document.getElementById("login-warning")?.classList.add("hidden");
   } else {
     currentUserId = null;
-
-    const form = document.getElementById("form-avaliacao-wrapper");
-    const warning = document.getElementById("login-warning");
-
-    if (form) form.classList.add("hidden");
-    if (warning) warning.classList.remove("hidden");
+    // ... esconde formulário ...
+    document.getElementById("form-avaliacao-wrapper")?.classList.add("hidden");
+    document.getElementById("login-warning")?.classList.remove("hidden");
   }
 }
 // Lógica Visual das Estrelas do Input
@@ -2704,6 +2702,38 @@ if (reviewOverlay) {
   reviewOverlay.addEventListener("click", function (e) {
     if (e.target === this) fecharModalAvaliacao();
   });
+}
+
+function initCookieConsent() {
+  const banner = document.getElementById("cookie-banner");
+  const acceptBtn = document.getElementById("accept-cookies-btn");
+
+  // Nome da chave no LocalStorage
+  const STORAGE_KEY = "cegonha_cookie_consent";
+
+  // 1. Verifica se já aceitou
+  if (!localStorage.getItem(STORAGE_KEY)) {
+    // Se não tem o registro, mostra o banner
+    if (banner) banner.style.display = "flex";
+  }
+
+  // 2. Evento de Clique no OK
+  if (acceptBtn) {
+    acceptBtn.addEventListener("click", () => {
+      // Salva a aceitação (funciona como um cookie persistente)
+      localStorage.setItem(STORAGE_KEY, "true");
+
+      // Adiciona animação de saída antes de esconder
+      banner.style.transition = "transform 0.5s ease, opacity 0.5s ease";
+      banner.style.transform = "translateY(100%)";
+      banner.style.opacity = "0";
+
+      // Remove do DOM após animação
+      setTimeout(() => {
+        banner.style.display = "none";
+      }, 500);
+    });
+  }
 }
 
 // Garante que todas as funções importantes estão no objeto window

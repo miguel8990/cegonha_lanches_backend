@@ -6,49 +6,88 @@ import { showToast } from "./utils.js";
 //  GESTÃO DE SESSÃO (Interface Visual)
 //  Nota: O Token real fica num Cookie HttpOnly invisível ao JS.
 // ==========================================
+let currentUserInMemory = null;
 
 export function saveSession(token_ignored, user) {
-  // Salvamos apenas os dados públicos do usuário para a interface
-  // O parâmetro 'token_ignored' é mantido apenas para não quebrar chamadas antigas, mas não é usado.
-  if (user) {
-    localStorage.setItem("user", JSON.stringify(user));
-  }
+  // 1. Salva dados completos na MEMÓRIA RAM (para uso imediato do socket/api)
+  currentUserInMemory = user;
+
+  // 2. Prepara objeto "Leve" apenas para controle de UI (Botões)
+  const sessionUI = {
+    is_logged: true,
+    ui_name: user.name.split(" ")[0], // Só o primeiro nome
+    role: user.role, // Para mostrar botão Admin
+  };
+
+  // 3. Salva no disco apenas o sinalizador visual
+  localStorage.setItem("session_ui", JSON.stringify(sessionUI));
+
+  // 4. LIMPEZA DE LEGADO: Remove dados antigos inseguros se existirem
+  localStorage.removeItem("user");
+  localStorage.removeItem("access_token");
 }
 
 export async function verifySession() {
+  // 1. Chama o endpoint /auth/me (o navegador envia o cookie automaticamente)
   const user = await fetchCurrentUser();
 
   if (user) {
-    // Backend confirmou o cookie -> Sessão Válida
+    // SUCESSO: Backend confirmou o cookie.
+    // Atualizamos a memória e o localStorage visual.
+    // Isso conserta o problema: Se deletar localStorage, essa função recria ele.
     saveSession(null, user);
+    console.log("✅ Sessão validada via Cookie HttpOnly");
   } else {
-    // Backend rejeitou ou cookie expirou
+    // FALHA: Cookie expirou ou é inválido.
+    // Forçamos logout visual.
+    console.warn("🔒 Sessão inválida. Limpando UI.");
     clearSession();
   }
 
-  // Atualiza a UI (botões, nome, etc)
+  // Atualiza a tela (esconde botão login, mostra perfil)
   if (window.checkLoginState) window.checkLoginState();
 }
 
 export function getSession() {
-  const userStr = localStorage.getItem("user");
-  let user = {};
+  // Tenta ler o dado visual
+  const uiStr = localStorage.getItem("session_ui");
+  let uiData = null;
   try {
-    user = userStr ? JSON.parse(userStr) : {};
-  } catch (e) {}
+    uiData = uiStr ? JSON.parse(uiStr) : null;
+  } catch (e) {
+    clearSession();
+  }
 
-  // Retorna true se tivermos usuário salvo (apenas para lógica visual)
-  // O backend fará a validação real em cada request.
-  return { token: user.id ? "cookie_active" : null, user };
+  // Se tivermos dados em memória (pós-load), eles têm prioridade
+  if (currentUserInMemory) {
+    return {
+      logged: true,
+      user: currentUserInMemory, // Retorna objeto completo se estiver na RAM
+    };
+  }
+
+  // Se só tivermos o dado visual (ex: acabou de dar F5), retornamos o básico
+  if (uiData && uiData.is_logged) {
+    return {
+      logged: true,
+      user: { name: uiData.ui_name, role: uiData.role }, // Mock para UI funcionar
+    };
+  }
+
+  return { logged: false, user: {} };
 }
-
+export function getCurrentUserSecure() {
+  return currentUserInMemory;
+}
 export function clearSession() {
-  localStorage.removeItem("user");
+  localStorage.removeItem("session_ui"); // Remove sinalizador visual
+  localStorage.removeItem("user"); // Garante limpeza de legado
+  currentUserInMemory = null; // Limpa memória
 }
 
 export async function logout() {
   try {
-    // Avisa o backend para destruir o cookie HttpOnly
+    // Avisa backend para matar o cookie
     await fetch(`${API_BASE_URL}/auth/logout`, {
       method: "POST",
       credentials: "include",
@@ -59,9 +98,10 @@ export async function logout() {
 
   clearSession();
   if (window.showToast) window.showToast("Sessão terminada.", "info");
-  setTimeout(() => {
-    window.location.href = "index.html";
-  }, 1000);
+
+  // Atualiza UI imediatamente sem reload forçado (UX melhor)
+  if (window.checkLoginState) window.checkLoginState();
+  setTimeout(() => (window.location.href = "index.html"), 500);
 }
 
 // Mantido para compatibilidade, mas retorna null (segurança)
@@ -149,14 +189,13 @@ if (form) {
 }
 
 // Funções para abrir/fechar modal (Helpers globais)
-export function abrirModalLogin() {
-  const modal =
-    typeof openAuthModal === "function"
-      ? openAuthModal()
-      : document.getElementById("modal-auth");
+export function abrirModalLogin(mensagemOpcional) {
+  const modal = document.getElementById("modal-auth");
   if (modal) {
-    if (modal instanceof HTMLElement) modal.style.display = "block";
-    // Se openAuthModal já abre, não precisa fazer nada aqui
+    modal.style.display = "flex";
+    if (window.switchAuthTab) window.switchAuthTab("acesso"); // Abre na aba inicial
+    if (mensagemOpcional && window.showToast)
+      window.showToast(mensagemOpcional, "info");
   }
 }
 

@@ -112,11 +112,8 @@ def get_users_report_logic():
     output = []
     for user, count in results:
         output.append({
-            "id": user.id,
             "name": user.name,
             "whatsapp": user.whatsapp,
-            "email": user.email,
-            "role": user.role,
             "orders_count": count  # Dado vindo do Count SQL
         })
 

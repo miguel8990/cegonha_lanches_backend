@@ -404,7 +404,31 @@ td {
   border-color: var(--color-gold);
   transform: scale(1.05);
 }
+/* Estilo do Link de WhatsApp na tabela */
+.zap-link {
+  color: #2ecc71; /* Verde Zap */
+  text-decoration: none;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: background 0.2s;
+}
 
+.zap-link:hover {
+  background-color: rgba(46, 204, 113, 0.1);
+}
+
+.badge-count {
+  background-color: #333;
+  color: #f1c40f; /* Dourado */
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 0.85rem;
+  font-weight: bold;
+}
 /* site/css/admin.css - Adicione ou substitua no final */
 
 .btn-upload-padrao {

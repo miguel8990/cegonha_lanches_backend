@@ -253,9 +253,12 @@ def update_order_status_logic(order_id, new_status):
     return order_data
 
 
-def get_order_status_logic(order_id):
+def get_order_status_logic(order_id, user_id):
     order = Order.query.get(order_id)
     if not order: raise ValueError("Pedido não encontrado")
+    if str(order.user_id) != str(user_id):
+        raise ValueError("Você não tem permissão para ver este pedido.")
+    
     return {"id": order.id, "status": order.status}
 
 

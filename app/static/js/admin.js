@@ -882,19 +882,29 @@ async function carregarUsuariosAdmin() {
       '<tr><td colspan="4">Nenhum usuário encontrado.</td></tr>';
     return;
   }
-
+  lista.sort((a, b) => b.orders_count - a.orders_count);
   tbody.innerHTML = lista
-    .map(
-      (u) => `
+    .map((u) => {
+      // Formatação simples do WhatsApp para link clicável
+      const zapClean = u.whatsapp ? u.whatsapp.replace(/\D/g, "") : "";
+      const zapDisplay = u.whatsapp
+        ? `<a href="https://wa.me/55${zapClean}" target="_blank" style="color:#2ecc71; text-decoration:none;">
+             <i class="fa-brands fa-whatsapp"></i> ${u.whatsapp}
+           </a>`
+        : "-";
+
+      // Badge Dourada para contagem (Estilo visual)
+      return `
         <tr>
-            <td>${u.id}</td>
-            <td>${u.name}<br><small style="color:#666">${u.email}</small></td>
-            <td>${u.whatsapp || "-"}</td>
-            <td><span style="background:#333; padding:2px 6px; border-radius:4px;">${
-              u.orders_count
-            }</span></td>
-        </tr>`
-    )
+            <td><strong>${u.name}</strong></td>
+            <td>${zapDisplay}</td>
+            <td>
+                <span style="background:#333; color:#f1c40f; padding:4px 10px; border-radius:12px; font-weight:bold; font-size:0.9rem;">
+                    ${u.orders_count} pedidos
+                </span>
+            </td>
+        </tr>`;
+    })
     .join("");
 }
 

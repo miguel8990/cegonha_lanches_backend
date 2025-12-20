@@ -84,7 +84,7 @@ def update_schedule():
 
 @bp_config.route('/users', methods=['GET'])
 @admin_required()
-@limiter.limit("200 per hour", error_message="Muitas requisições, tente novamente mais tarde.")
+@limiter.limit("30 per hour", error_message="Muitas requisições, tente novamente mais tarde.")
 def list_users_report():
     """
     Relatório de clientes + qtd de pedidos.

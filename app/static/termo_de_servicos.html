@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Termos de Serviço e Privacidade - Cegonha Lanches</title>
+    <link rel="shortcut icon" href="assets/favicon.webp" type="image/webp">
+    
+    <style>
+        /* CSS EMBUTIDO - DARK MODE PREMIUM */
+        :root {
+            --bg-color: #1a1a1a;
+            --card-color: #1e1e1e;
+            --text-color: #e0e0e0;
+            --gold-color: #f1c40f;
+            --gold-hover: #d4ac0d;
+            --border-color: #333;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: var(--card-color);
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            border: 1px solid var(--border-color);
+        }
+
+        h1 {
+            color: var(--gold-color);
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2rem;
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 15px;
+        }
+
+        h2 {
+            color: var(--gold-color);
+            margin-top: 25px;
+            margin-bottom: 15px;
+            font-size: 1.4rem;
+        }
+
+        p {
+            margin-bottom: 15px;
+            color: #ccc;
+        }
+
+        ul {
+            margin-bottom: 20px;
+            padding-left: 20px;
+        }
+
+        li {
+            margin-bottom: 8px;
+            color: #ccc;
+        }
+
+        .highlight {
+            color: #fff;
+            font-weight: bold;
+        }
+
+        .btn-back {
+            display: block;
+            width: 100%;
+            padding: 15px;
+            margin-top: 40px;
+            background-color: var(--gold-color);
+            color: #000;
+            text-align: center;
+            text-decoration: none;
+            font-weight: bold;
+            border-radius: 8px;
+            transition: background 0.3s ease;
+            font-size: 1.1rem;
+        }
+
+        .btn-back:hover {
+            background-color: var(--gold-hover);
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 20px;
+            }
+            h1 { font-size: 1.5rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Termos de Serviço e Privacidade</h1>
+        
+        <p>Última atualização: <span id="current-date"></span></p>
+
+        <p>Bem-vindo ao <strong>Cegonha Lanches</strong>. A sua privacidade é nossa prioridade. Este documento explica como coletamos, usamos e protegemos seus dados.</p>
+
+        <h2>1. Coleta de Dados</h2>
+        <p>Para fornecer nossos serviços de delivery e atendimento, coletamos as seguintes informações quando você se cadastra ou realiza um pedido:</p>
+        <ul>
+            <li><span class="highlight">Dados Pessoais:</span> Nome completo, E-mail e número de WhatsApp.</li>
+            <li><span class="highlight">Endereço:</span> Logradouro, número, bairro e complemento para entrega.</li>
+            <li><span class="highlight">Histórico:</span> Registros de seus pedidos anteriores e mensagens enviadas no chat de suporte.</li>
+        </ul>
+
+        <h2>2. Uso de Cookies e Armazenamento Local</h2>
+        <p>Utilizamos tecnologias de armazenamento no seu navegador para melhorar sua experiência:</p>
+        <ul>
+            <li><strong>Cookies de Sessão (HttpOnly):</strong> Utilizados para manter você logado de forma segura. Eles não podem ser acessados por scripts de terceiros.</li>
+            <li><strong>Local Storage:</strong> Usado para salvar preferências temporárias, como itens no carrinho de compras e aceitação deste aviso de cookies.</li>
+        </ul>
+
+        <h2>3. Finalidade dos Dados</h2>
+        <p>Seus dados são utilizados exclusivamente para:</p>
+        <ul>
+            <li>Processar e entregar seus pedidos.</li>
+            <li>Entrar em contato via WhatsApp para atualizações de status.</li>
+            <li>Prevenir fraudes e garantir a segurança do sistema.</li>
+        </ul>
+        <p><strong>Não vendemos nem compartilhamos seus dados com terceiros para fins de marketing.</strong></p>
+
+        <h2>4. Seus Direitos</h2>
+        <p>Você tem o direito de solicitar a visualização, correção ou exclusão dos seus dados pessoais a qualquer momento. Para exercer esses direitos, entre em contato através do nosso suporte.</p>
+
+        <a href="index.html" class="btn-back">Voltar para o Cardápio</a>
+    </div>
+
+    <script>
+        // Script simples para atualizar a data automaticamente
+        const dateElement = document.getElementById('current-date');
+        const options = { year: 'numeric', month: 'long', day: 'numeric' };
+        dateElement.textContent = new Date().toLocaleDateString('pt-BR', options);
+    </script>
+</body>
+</html>

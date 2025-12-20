@@ -295,7 +295,7 @@ h2.section-title::after {
   width: 180px;
   padding: 15px;
   box-shadow: 0 5px 20px rgba(0, 0, 0, 0.5);
-  z-index: 2000;
+  z-index: 1500;
   text-align: right;
 }
 .profile-menu.active {
@@ -926,7 +926,7 @@ footer {
   width: 100%;
   height: 100%;
   background-color: #1a1a1a;
-  z-index: 2000;
+  z-index: 1500;
   transition: right 0.3s ease;
   display: flex;
   flex-direction: column;
@@ -1442,6 +1442,7 @@ footer {
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.3s ease;
+  z-index: 999;
 }
 
 .modal-overlay:not(.hidden) {
@@ -1722,7 +1723,7 @@ footer {
   width: 100%;
   height: 100%;
   background: rgba(0, 0, 0, 0.8);
-  z-index: 3000;
+  z-index: 2000;
   display: none;
   align-items: center;
   justify-content: center;
@@ -1742,6 +1743,8 @@ footer {
   overflow: hidden;
   border: 1px solid #333;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  position: fixed;
+  z-index: 2010;
 }
 .modal-header {
   height: 150px;
@@ -1982,7 +1985,7 @@ footer {
   /* Sombra profunda para dar efeito flutuante */
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
 
-  z-index: 5000;
+  z-index: 1100;
   display: flex;
   flex-direction: column;
   overflow: hidden; /* Garante que nada saia das bordas redondas */
@@ -1999,12 +2002,16 @@ footer {
   border-radius: 30px; /* Vira uma "pílula" quando fechado */
   width: 200px; /* Fica mais estreito quando fechado */
   cursor: pointer;
+  position: fixed;
+  z-index: 100;
 }
 
 /* Animação de "Chamar Atenção" quando fechado */
 .chat-widget.minimized:hover {
   transform: translateY(-5px); /* Pula um pouquinho */
   box-shadow: 0 0 20px rgba(217, 48, 37, 0.4); /* Glow vermelho */
+  position: fixed;
+  z-index: 100;
 }
 
 /* --- CABEÇALHO DO CHAT --- */
@@ -2044,6 +2051,8 @@ footer {
 }
 .chat-widget.minimized .toggle-icon {
   transform: rotate(180deg);
+  position: fixed;
+  z-index: 100;
 }
 
 /* --- CORPO DO CHAT (MENSAGENS) --- */
@@ -2728,6 +2737,8 @@ footer {
   box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8);
   max-width: 420px; /* Um pouco mais estreito que o normal para focar */
   margin: 0 auto;
+  position: fixed;
+  z-index: 2010;
 }
 
 #modal-auth .modal-body {
@@ -3392,6 +3403,77 @@ ul.magic-text-body li span {
   box-shadow: 0 6px 20px rgba(39, 174, 96, 0.4);
 }
 
+/* --- Banner de Cookies --- */
+.cookie-banner {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  background-color: #1e1e1e; /* Cor dos seus cards */
+  border-top: 2px solid #f1c40f; /* Borda Dourada */
+  padding: 20px;
+  z-index: 9999; /* Fica acima de tudo, inclusive modais */
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 -5px 20px rgba(0, 0, 0, 0.5);
+  flex-wrap: wrap;
+  gap: 15px;
+  animation: slideUp 0.5s ease-out;
+  z-index: 9990;
+}
+
+.cookie-content p {
+  color: #e0e0e0;
+  font-size: 0.95rem;
+  margin: 0;
+  max-width: 800px;
+}
+
+.cookie-actions {
+  display: flex;
+  gap: 15px;
+  align-items: center;
+}
+
+/* Reutilizando seus botões, mas forçando ajustes caso necessário */
+.cookie-actions .btn-small {
+  padding: 8px 20px;
+  font-size: 0.9rem;
+  white-space: nowrap;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* Responsividade para celular */
+@media (max-width: 768px) {
+  .cookie-banner {
+    flex-direction: column;
+    text-align: center;
+    padding: 20px 15px;
+  }
+
+  .cookie-actions {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .cookie-actions button,
+  .cookie-actions a {
+    flex: 1;
+    justify-content: center;
+  }
+}
+
 @media (max-width: 768px) {
   /* Garante que o container alinhe os botões */
   .modal-actions {
@@ -3558,11 +3640,15 @@ ul.magic-text-body li span {
     max-width: 95%; /* Quase largura total */
     max-height: 85vh; /* Evita que corte em telas pequenas */
     margin: 10px auto;
+    position: fixed;
+    z-index: 2010;
   }
 
   /* Modal de Auth (Login) */
   #modal-auth .modal-content {
     max-width: 95%;
+    position: fixed;
+    z-index: 2010;
   }
 
   /* Modal de Carrinho (Sidebar) */
@@ -3599,11 +3685,13 @@ ul.magic-text-body li span {
 
   /* --- CHAT WIDGET MOBILE --- */
   .chat-widget {
+    position: fixed;
     left: 10px;
     right: 10px; /* Ocupa a largura (com margem) */
     bottom: 10px;
     width: auto; /* Remove largura fixa */
     border-radius: 12px;
+    z-index: 100;
   }
 
   .chat-widget.minimized {
@@ -3617,17 +3705,23 @@ ul.magic-text-body li span {
     align-items: center;
     justify-content: center;
     padding: 0;
+    position: fixed;
+    z-index: 100;
   }
 
   /* Esconde o texto "Fale Conosco" quando minimizado no mobile */
   .chat-widget.minimized .chat-title {
     display: none;
+    position: fixed;
+    z-index: 100;
   }
 
   /* Mostra apenas o ícone */
   .chat-widget.minimized .chat-toggle-btn {
     position: static;
     font-size: 1.5rem;
+    position: fixed;
+    z-index: 100;
   }
 
   /* --- AJUSTES DE TOAST (NOTIFICAÇÃO) --- */
@@ -3637,6 +3731,8 @@ ul.magic-text-body li span {
     top: auto;
     bottom: 80px; /* Aparece em baixo, acima do chat */
     width: auto;
+    position: fixed;
+    z-index: 9999;
   }
 
   .toast {
@@ -3655,7 +3751,7 @@ ul.magic-text-body li span {
   /* --- CONFIGURAÇÃO BASE DO CONTAINER (ANIMATION & Z-INDEX) --- */
   .chat-widget {
     /* Garante que o widget flutue sobre tudo (Header fixo, modais, etc) */
-    z-index: 99999 !important;
+    z-index: 1100 !important;
     transition: all 0.35s cubic-bezier(0.19, 1, 0.22, 1); /* Efeito 'Spring' suave */
     overflow: hidden; /* Impede vazamento de scroll */
   }
@@ -3765,7 +3861,7 @@ ul.magic-text-body li span {
   @media (max-width: 768px) {
     /* --- CONFIGURAÇÃO BASE --- */
     .chat-widget {
-      z-index: 99999 !important;
+      z-index: 1100 !important;
       transition: all 0.35s cubic-bezier(0.19, 1, 0.22, 1);
       overflow: hidden;
     }
@@ -3869,6 +3965,7 @@ ul.magic-text-body li span {
       display: flex;
       align-items: center;
       justify-content: center;
+      z-index: 100;
     }
 
     /* --- O TRUQUE DO CLIQUE (ESSENCIAL) --- */
@@ -3882,7 +3979,7 @@ ul.magic-text-body li span {
       width: 100% !important;
       height: 100% !important;
       opacity: 0 !important; /* Invisível */
-      z-index: 20; /* Fica na frente de tudo para capturar o clique */
+      z-index: 100; /* Fica na frente de tudo para capturar o clique */
       cursor: pointer;
     }
 

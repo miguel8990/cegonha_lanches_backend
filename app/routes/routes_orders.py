@@ -45,8 +45,10 @@ def get_my_order():
 @jwt_required()
 @limiter.limit("200 per hour", error_message="Muitas requisições, tente novamente mais tarde.")
 def check_order_status(order_id):
+    user_id = get_jwt_identity()
+    
     try:
-        status_info = services.order_service.get_order_status_logic(order_id)
+        status_info = services.order_service.get_order_status_logic(order_id, user_id)
         return jsonify(status_info), 200
     except ValueError as e:
         return jsonify({'error': str(e)}), 404
