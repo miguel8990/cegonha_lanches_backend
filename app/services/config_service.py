@@ -112,9 +112,35 @@ def get_users_report_logic():
     output = []
     for user, count in results:
         output.append({
+            
             "name": user.name,
             "whatsapp": user.whatsapp,
             "orders_count": count  # Dado vindo do Count SQL
         })
 
+    return output
+
+
+def get_users_for_delete():
+    """
+    Gera relatório de usuários com contagem de pedidos.
+    OTIMIZAÇÃO: Usa SQL puro (JOIN) em vez de loop Python para performance.
+    """
+    # Query: Seleciona Usuário e conta quantos pedidos ele tem
+    results = db.session.query(
+        User,
+        func.count(Order.id).label('total_orders')
+    ).outerjoin(Order).filter(User.role != 'super_admin').group_by(User.id).all()
+
+    # Formata a saída para lista de dicionários
+    output = []
+    for user, count in results:
+        output.append({
+            "id": user.id,          # <--- ADICIONADO: Obrigatório para a exclusão
+            "name": user.name,
+            "email": user.email,    # <--- ADICIONADO: Bom para conferência
+            "whatsapp": user.whatsapp,
+            "role": user.role,
+            "orders_count": count
+        })
     return output

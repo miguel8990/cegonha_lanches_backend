@@ -1,5 +1,5 @@
 from flask import Blueprint, jsonify, request, redirect, make_response
-from app.services import auth_service
+from app.services import auth_service, config_service
 from flask_jwt_extended import jwt_required, get_jwt_identity, unset_jwt_cookies, set_access_cookies
 from app.decorators import super_admin_required
 from app.extensions import limiter
@@ -289,3 +289,40 @@ def pegar_dados_admin():
     }
 
     return jsonify(dados_secretos), 200
+
+
+@bp_auth.route('/admin/list_all_users', methods=['GET'])
+@super_admin_required()
+@limiter.limit("20 per hour", error_message="Muitas tentativas, tente novamente mais tarde.")
+def listar_all_users():
+    try:
+        report_data = config_service.get_users_for_delete()
+        return jsonify(report_data), 200
+    except Exception as e:
+        print(f"Erro relatório usuários: {e}") 
+        return jsonify({'error': 'Erro ao gerar lista de usuários'}), 500
+
+
+@bp_auth.route('/admin/delete_user', methods=['POST'])
+@super_admin_required()
+@limiter.limit("20 per hour", error_message="Muitas tentativas, tente novamente mais tarde.")
+def delete_user_route(): # Renomeado para evitar conflito de nome com a função importada
+    data = request.get_json()
+    
+    # Validação simples da entrada
+    if not data or 'user_id' not in data:
+        return jsonify({'error': 'O campo user_id é obrigatório.'}), 400
+
+    target_id = data['user_id']
+    
+    # Chama o serviço
+    resultado = auth_service.delete_user(target_id)
+
+    if resultado['sucesso']:
+        return jsonify({
+            "message": resultado['mensagem']
+        }), 200
+    else:
+        return jsonify({
+            "error": resultado.get('erro', 'Erro desconhecido')
+        }), 400

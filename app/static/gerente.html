@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Criar Gerente | Cegonha Lanches</title>
+    <title>Gerenciamento | Cegonha Lanches</title>
 
     <link
       rel="stylesheet"
@@ -13,18 +13,22 @@
     <link rel="stylesheet" href="css/admin.css" />
 
     <style>
-      /* Ajuste simples para centralizar o formulário na tela */
+      /* --- ESTILOS GERAIS DA PÁGINA --- */
       body {
         display: flex;
+        flex-direction: column; /* Permite empilhar os cards verticalmente */
         align-items: center;
-        justify-content: center;
+        justify-content: flex-start; /* Começa do topo */
         min-height: 100vh;
         background-color: #111;
         background-image: url("assets/principal.jpg");
         background-size: cover;
+        background-attachment: fixed; /* Fundo fixo ao rolar */
         position: relative;
+        padding: 40px 20px; /* Espaçamento para não grudar nas bordas */
       }
-      /* Camada escura para dar leitura */
+
+      /* Camada escura de fundo */
       body::before {
         content: "";
         position: absolute;
@@ -32,20 +36,121 @@
         left: 0;
         right: 0;
         bottom: 0;
-        background: rgba(0, 0, 0, 0.85);
+        background: rgba(0, 0, 0, 0.92); /* Um pouco mais escuro para leitura */
         z-index: 0;
       }
 
-      .manager-card {
+      /* --- ESTILO DOS CARDS (Containers) --- */
+      .manager-card,
+      .list-card {
         position: relative;
         z-index: 2;
         width: 100%;
-        max-width: 450px;
+        max-width: 500px; /* Largura padrão para o form */
         background: #1a1a1a;
         padding: 30px;
         border-radius: 10px;
         border: 1px solid #333;
         box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        margin-bottom: 30px; /* Espaço entre os cards */
+      }
+
+      /* O card da lista pode ser mais largo */
+      .list-card {
+        max-width: 900px;
+      }
+
+      /* --- ESTILOS DA TABELA DE USUÁRIOS --- */
+      .user-table-container {
+        overflow-x: auto; /* Permite rolar lateralmente no celular */
+      }
+
+      table.user-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 20px;
+        color: #ccc;
+        font-size: 0.9rem;
+      }
+
+      table.user-table th,
+      table.user-table td {
+        padding: 12px;
+        text-align: left;
+        border-bottom: 1px solid #333;
+      }
+
+      table.user-table th {
+        background-color: #222;
+        color: var(--color-gold);
+        font-weight: 600;
+        white-space: nowrap;
+      }
+
+      table.user-table tr:hover {
+        background-color: #252525;
+      }
+
+      /* Badges para o Perfil (Role) */
+      .badge {
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 0.75rem;
+        font-weight: bold;
+        text-transform: uppercase;
+      }
+      .badge-client {
+        background-color: #2c3e50;
+        color: #aab7c4;
+      }
+      .badge-admin {
+        background-color: var(--color-gold);
+        color: #000;
+      }
+      .badge-super {
+        background-color: #c0392b;
+        color: white;
+      }
+
+      /* Botão de Deletar */
+      .btn-delete {
+        background-color: transparent;
+        border: 1px solid #c0392b;
+        color: #c0392b;
+        padding: 6px 10px;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: 0.2s;
+        font-size: 0.8rem;
+      }
+      .btn-delete:hover {
+        background-color: #c0392b;
+        color: white;
+      }
+      .btn-delete:disabled {
+        border-color: #555;
+        color: #555;
+        cursor: not-allowed;
+      }
+
+      .refresh-btn {
+        background: none;
+        border: none;
+        color: var(--color-gold);
+        cursor: pointer;
+        font-size: 1.2rem;
+        float: right;
+      }
+      .refresh-btn:hover {
+        color: white;
+      }
+
+      /* Mensagem vazia */
+      .empty-msg {
+        text-align: center;
+        padding: 20px;
+        color: #666;
+        font-style: italic;
       }
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.4/socket.io.min.js"></script>
@@ -122,11 +227,61 @@
       </div>
     </div>
 
+    <div class="list-card">
+      <div
+        style="
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 15px;
+        "
+      >
+        <h3 style="color: white; margin: 0">
+          <i
+            class="fa-solid fa-users-gear"
+            style="color: var(--color-gold); margin-right: 10px"
+          ></i>
+          Gerenciar Usuários
+        </h3>
+        <button
+          class="refresh-btn"
+          onclick="window.fetchUsers()"
+          title="Atualizar Lista"
+        >
+          <i class="fa-solid fa-rotate-right"></i>
+        </button>
+      </div>
+
+      <p style="color: #888; font-size: 0.9rem; margin-bottom: 20px">
+        Lista completa de usuários registrados. Cuidado ao deletar.
+      </p>
+
+      <div class="user-table-container">
+        <table class="user-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Nome</th>
+              <th>Email</th>
+              <th>Perfil</th>
+              <th>Pedidos</th>
+              <th style="text-align: center">Ações</th>
+            </tr>
+          </thead>
+          <tbody id="users-tbody">
+            <tr>
+              <td colspan="6" class="empty-msg">Carregando...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
     <script type="module">
       import { getToken, getSession } from "./js/auth.js";
-      import { showToast } from "./js/main.js";
+      import { showToast } from "./js/utils.js";
 
-      // 1. Definição da URL da API (igual ao api.js)
+      // 1. Definição da URL da API
       const isLocalhost =
         window.location.hostname === "localhost" ||
         window.location.hostname === "127.0.0.1";
@@ -144,10 +299,16 @@
             "Acesso Negado! Apenas o Super Admin pode acessar esta página."
           );
           window.location.href = "index.html";
+          return;
         }
+
+        // Se passou, carrega a lista de usuários
+        fetchUsers();
       });
 
-      // 3. Envio do Formulário
+      // ---------------------------------------------------------------
+      // LÓGICA DO FORMULÁRIO (CRIAR GERENTE)
+      // ---------------------------------------------------------------
       const form = document.getElementById("form-create-manager");
 
       form.addEventListener("submit", async (e) => {
@@ -166,13 +327,13 @@
         };
 
         try {
-          const token = getToken(); // Pega o token dos cookies
+          const token = getToken();
 
           const res = await fetch(`${API_BASE_URL}/auth/admin/create`, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
-              Authorization: `Bearer ${token}`, // Autenticação Obrigatória
+              Authorization: `Bearer ${token}`,
             },
             body: JSON.stringify(data),
           });
@@ -185,6 +346,7 @@
               "success"
             );
             form.reset();
+            fetchUsers(); // Atualiza a lista lá embaixo
           } else {
             showToast(json.error || "Erro ao criar gerente.", "error");
           }
@@ -196,6 +358,121 @@
           btn.disabled = false;
         }
       });
+
+      // ---------------------------------------------------------------
+      // LÓGICA DA LISTA DE USUÁRIOS (LISTAR E DELETAR)
+      // ---------------------------------------------------------------
+
+      // Função global para poder chamar no botão de refresh
+      window.fetchUsers = async function () {
+        const tbody = document.getElementById("users-tbody");
+        tbody.innerHTML =
+          '<tr><td colspan="6" class="empty-msg">Carregando usuários...</td></tr>';
+
+        try {
+          const token = getToken();
+          const res = await fetch(`${API_BASE_URL}/auth/admin/list_all_users`, {
+            method: "GET",
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          });
+
+          if (!res.ok) throw new Error("Falha ao buscar usuários");
+
+          const users = await res.json();
+          renderTable(users);
+        } catch (error) {
+          console.error(error);
+          tbody.innerHTML = `<tr><td colspan="6" class="empty-msg" style="color: #c0392b;">Erro ao carregar: ${error.message}</td></tr>`;
+        }
+      };
+
+      function renderTable(users) {
+        const tbody = document.getElementById("users-tbody");
+        tbody.innerHTML = "";
+
+        if (!users || users.length === 0) {
+          tbody.innerHTML =
+            '<tr><td colspan="6" class="empty-msg">Nenhum usuário encontrado.</td></tr>';
+          return;
+        }
+
+        users.forEach((u) => {
+          const tr = document.createElement("tr");
+
+          // Define a classe da badge baseada na role
+          let badgeClass = "badge-client";
+          let roleName = "Cliente";
+
+          if (u.role === "admin") {
+            badgeClass = "badge-admin";
+            roleName = "Gerente";
+          } else if (u.role === "super_admin") {
+            badgeClass = "badge-super";
+            roleName = "Super Admin";
+          }
+
+          // Se for super_admin, não mostra botão de delete
+          // Também evita que o admin se delete a si mesmo (comparando ids se necessário, mas a role já ajuda)
+          const isSuper = u.role === "super_admin";
+          const deleteBtnHtml = isSuper
+            ? '<span style="color:#666; font-size:0.8rem;">-</span>'
+            : `<button class="btn-delete" onclick="window.confirmDelete(${u.id}, '${u.name}')">
+                     <i class="fa-solid fa-trash"></i> Excluir
+                   </button>`;
+
+          tr.innerHTML = `
+                  <td>#${u.id}</td>
+                  <td>${u.name || "Sem nome"}</td>
+                  <td>${u.email}</td>
+                  <td><span class="badge ${badgeClass}">${roleName}</span></td>
+                  <td>${u.orders_count}</td>
+                  <td style="text-align: center;">${deleteBtnHtml}</td>
+              `;
+          tbody.appendChild(tr);
+        });
+      }
+
+      // Função global para lidar com a deleção
+      window.confirmDelete = async function (userId, userName) {
+        const confirmMsg = `ATENÇÃO:\n\nTem certeza que deseja EXCLUIR o usuário "${userName}" (ID: ${userId})?\n\n- O histórico de pedidos será preservado (anonimizado).\n- Chat e comentários serão apagados.\n- Esta ação é IRREVERSÍVEL.`;
+
+        if (confirm(confirmMsg)) {
+          await deleteUser(userId);
+        }
+      };
+
+      async function deleteUser(userId) {
+        try {
+          const token = getToken();
+          showToast("Processando exclusão...", "info");
+
+          const res = await fetch(`${API_BASE_URL}/auth/admin/delete_user`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({ user_id: userId }),
+          });
+
+          const json = await res.json();
+
+          if (res.ok) {
+            showToast(
+              json.message || "Usuário deletado com sucesso.",
+              "success"
+            );
+            fetchUsers(); // Recarrega a tabela
+          } else {
+            showToast(json.error || "Erro ao deletar.", "error");
+          }
+        } catch (error) {
+          console.error(error);
+          showToast("Erro de conexão.", "error");
+        }
+      }
     </script>
   </body>
 </html>

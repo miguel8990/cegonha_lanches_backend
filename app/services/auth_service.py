@@ -4,7 +4,7 @@ import datetime
 import os
 import bleach
 import secrets
-from app.models import User, db
+from app.models import User, Order, ChatMessage, Coments, Address, db
 from flask_jwt_extended import create_access_token, decode_token
 from app.services.email_services import send_verification_email, send_magic_link_email, send_reset_email
 
@@ -405,3 +405,54 @@ def magic_link(data):
         return {"sucesso": True, "mensagem": "Link enviado para seu e-mail."}
     else:
         return {"sucesso": False, "erro": "Erro ao enviar e-mail."}
+
+
+
+def delete_user(user_id):
+    """
+    Deleta um usuário garantindo a integridade do banco.
+    1. Impede deleção de Super Admin.
+    2. Desvincula Pedidos (Mantém histórico financeiro).
+    3. Remove dados dependentes (Chat, Comentários, Endereços).
+    4. Remove o Usuário.
+    """
+    if not user_id:
+        return {"sucesso": False, "erro": "ID do usuário é obrigatório."}
+
+    user = User.query.get(user_id)
+
+    if not user:
+        return {"sucesso": False, "erro": "Usuário não encontrado."}
+
+    # SEGURANÇA: Impedir exclusão de Super Admin ou Admin por engano via API
+    if user.role == 'super_admin':
+        return {"sucesso": False, "erro": "Não é permitido deletar um Super Admin."}
+    
+    try:
+        # 1. TRATAMENTO DE PEDIDOS (Histórico Financeiro)
+        # Não deletamos pedidos, apenas removemos a referência ao usuário (user_id=None).
+        # O snapshot do cliente (nome, telefone) já está salvo na tabela Order.
+        Order.query.filter_by(user_id=user.id).update({Order.user_id: None})
+
+        # 2. LIMPEZA DE DADOS DEPENDENTES
+        # Como user_id é nullable=False nestes models, precisamos apagar antes.
+        # (Se o Address tiver cascade='all, delete-orphan' no model User, o SQLAlchemy deleta sozinho, 
+        # mas Chat e Coments geralmente precisam de atenção manual se não configurados).
+        ChatMessage.query.filter_by(user_id=user.id).delete()
+        Coments.query.filter_by(user_id=user.id).delete()
+        
+        # O model User já tem cascade para Address, então não precisa deletar Address manualmente 
+        # se 'cascade="all, delete-orphan"' estiver correto no model.py.
+        
+        # 3. DELEÇÃO DO USUÁRIO
+        db.session.delete(user)
+        db.session.commit()
+
+        return {
+            "sucesso": True, 
+            "mensagem": f"Usuário {user.name} deletado e pedidos desvinculados com sucesso."
+        }
+
+    except Exception as e:
+        db.session.rollback()
+        return {"sucesso": False, "erro": f"Erro interno ao deletar: {str(e)}"}
