@@ -18,11 +18,6 @@ def get_real_ip():
     return "127.0.0.1"
 
 
-
-
-
-
-
 db = SQLAlchemy()
 ma = Marshmallow()
 jwt = JWTManager()

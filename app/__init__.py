@@ -1,4 +1,4 @@
-from flask import Flask, send_from_directory
+from flask import Flask, send_from_directory, jsonify
 from flask_cors import CORS
 from .errors import configure_errors
 from config import Config
@@ -58,6 +58,26 @@ def create_app():
     db.init_app(app)
     migrate.init_app(app, db)
     jwt.init_app(app)
+    @jwt.unauthorized_loader
+    def missing_token_callback(error_string):
+        return jsonify({
+            "message": "Você precisa fazer login para acessar esta página.",
+            "error": "token_missing"
+        }), 401
+
+    @jwt.invalid_token_loader
+    def invalid_token_callback(error_string):
+        return jsonify({
+            "message": "Sessão inválida. Faça login novamente.",
+            "error": "token_invalid"
+        }), 422
+    
+    @jwt.expired_token_loader
+    def expired_token_callback(jwt_header, jwt_payload):
+        return jsonify({
+            "message": "Sessão expirada. Faça login novamente.",
+            "error": "token_expired"
+        }), 401
     ma.init_app(app)
     limiter.init_app(app)
 

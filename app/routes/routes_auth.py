@@ -1,4 +1,4 @@
-from flask import Blueprint, jsonify, request, redirect, make_response
+from flask import Blueprint, jsonify, request, redirect, make_response, render_template
 from app.services import auth_service, config_service
 from flask_jwt_extended import jwt_required, get_jwt_identity, unset_jwt_cookies, set_access_cookies
 from app.decorators import super_admin_required
@@ -256,6 +256,21 @@ def reset_password_confirm():
 # =============================================================================
 # 👑 ADMIN ROUTES
 # =============================================================================
+@bp_auth.route('/gerente', methods=['GET'])
+@jwt_required(locations=['cookies']) # OBRIGA o token estar no Cookie
+def view_gerente_page():
+    current_user_id = get_jwt_identity()
+    user = User.query.get(current_user_id)
+
+    # Verificação Rigorosa no Servidor
+    if not user or user.role != 'super_admin':
+        # Se não for autorizado, redireciona para a home IMEDIATAMENTE.
+        # O HTML da página de gerente nunca é enviado para o navegador.
+        return redirect('/index.html')
+
+    # Se passou, renderiza o HTML seguro
+    return render_template('gerente.html')
+
 @bp_auth.route('/admin/create', methods=['POST'])
 @super_admin_required()
 @limiter.limit("5 per hour", error_message="Muitas tentativas, tente novamente mais tarde.")
