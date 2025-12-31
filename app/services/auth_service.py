@@ -162,12 +162,21 @@ def create_admin_by_super(actor_id, data):
 
 
 def login_user(data):
+    """
+    Autentica o usuário e retorna seus dados.
+    🔥 CORREÇÃO: Adicionado 'is_verified' no retorno para a rota validar.
+    """
     email = data.get('email')
     senha = data.get('password')
+    
+    # Busca usuário no banco
     usuario = User.query.filter_by(email=email).first()
 
+    # Verifica senha
     if not usuario or not check_password_hash(usuario.password_hash, senha):
         return {"sucesso": False, "message": "Email ou senha incorretos"}
+    
+    # Retorna o objeto user completo para a rota
     return {
         "sucesso": True,
         "user": {
@@ -175,7 +184,8 @@ def login_user(data):
             "name": usuario.name,
             "email": usuario.email,
             "role": usuario.role,
-            "whatsapp": usuario.whatsapp or ""
+            "whatsapp": usuario.whatsapp or "",
+            "is_verified": usuario.is_verified  # <--- 🔥 O CAMPO QUE FALTAVA
         },
         "message": "Login realizado com sucesso"
     }
@@ -187,8 +197,16 @@ def update_user_info(user_id, data):
         raise ValueError("Usuário não encontrado.")
 
     if 'name' in data: user.name = data['name'].strip()
-    if 'whatsapp' in data: user.whatsapp = data['whatsapp']
-
+    
+    if 'whatsapp' in data:
+        raw_whats = str(data['whatsapp'])
+        # 🔥 PADRONIZAÇÃO: Remove tudo que não é número
+        clean_whats = ''.join(filter(str.isdigit, raw_whats))
+        if clean_whats and (len(clean_whats) < 10 or len(clean_whats) > 11):
+             raise ValueError("Número de WhatsApp inválido (use DDD + Número).")
+        user.whatsapp = clean_whats
+    
+    
     # [NOVO] Lógica de Senha com Validação
     if 'password' in data and data['password']:
         password = data['password']
@@ -314,7 +332,12 @@ def login_with_google(token):
         db.session.add(user)
         db.session.commit()
         db.session.refresh(user)
-
+    else:
+        # Se já existe mas não estava verificado (ex: criou com email manual e depois entrou com google),
+        # confiamos no Google e verificamos agora.
+        if not user.is_verified:
+            user.is_verified = True
+            db.session.commit()
     return user
 
 

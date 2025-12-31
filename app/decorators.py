@@ -42,3 +42,33 @@ def super_admin_required():
             return fn(*args, **kwargs)
         return decorator
     return wrapper
+
+
+def verified_user_required():
+    """
+    Decorator que garante que o usuário não só tenha um token,
+    mas que a flag 'is_verified' no banco seja True.
+    Evita o 'Token Zumbi'.
+    """
+    def wrapper(fn):
+        @wraps(fn)
+        def decorator(*args, **kwargs):
+            # 1. Garante que o JWT é válido estruturalmente
+            verify_jwt_in_request()
+            
+            # 2. Pega o ID e busca o status REAL no banco
+            user_id = get_jwt_identity()
+            user = User.query.get(user_id)
+            
+            if not user:
+                return jsonify({"error": "Usuário não encontrado."}), 404
+                
+            if not user.is_verified:
+                return jsonify({
+                    "error": "Sua conta precisa ser verificada ou foi suspensa.", 
+                    "code": "account_locked"
+                }), 403
+                
+            return fn(*args, **kwargs)
+        return decorator
+    return wrapper

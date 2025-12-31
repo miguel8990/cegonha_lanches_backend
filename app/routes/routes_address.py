@@ -2,6 +2,7 @@ from flask import Blueprint, jsonify, request
 from app.services import address_service
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from app.extensions import limiter
+from app.decorators import verified_user_required
 bp_address = Blueprint('address', __name__)
 
 @bp_address.route('', methods=['GET'])
@@ -13,6 +14,7 @@ def list_addresses():
 
 @bp_address.route('', methods=['POST'])
 @jwt_required()
+@verified_user_required()
 @limiter.limit('20 per hour')
 def add_address():
     user_id = get_jwt_identity()
@@ -25,6 +27,7 @@ def add_address():
 
 @bp_address.route('/<int:id>/active', methods=['PATCH'])
 @jwt_required()
+@verified_user_required()
 @limiter.limit('30 per hour')
 def set_active(id):
     user_id = get_jwt_identity()
@@ -36,6 +39,7 @@ def set_active(id):
 
 @bp_address.route('/<int:id>', methods=['DELETE'])
 @jwt_required()
+@verified_user_required()
 @limiter.limit('30 per hour')
 def delete_addr(id):
     user_id = get_jwt_identity()

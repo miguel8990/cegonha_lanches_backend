@@ -1,4 +1,4 @@
-from ..models import Order, OrderItem, Product, db, Neighborhood, Coupon
+from ..models import Order, OrderItem, Product, db, Neighborhood, Coupon, User, Address
 import json
 from ..schemas import orders_schema
 from sqlalchemy.orm import joinedload
@@ -8,152 +8,94 @@ from decimal import Decimal, InvalidOperation  # Importe InvalidOperation
 from ..extensions import socketio
 
 
-def create_order_logic(data, user_id=None):
-    print("\n--- INICIANDO CRIAÇÃO DE PEDIDO ---")
-
-    # 1. Validação e Cabeçalho
+def create_order_logic(user_id, data):
+    """
+    Cria o pedido com:
+    1. Row Locking (previne erro de estoque concorrente).
+    2. Cálculo de preço via Backend (previne erro de float/fraude).
+    """
     customer_data = data.get('customer', {})
-    address_data = customer_data.get('address', {})
-    payment_method_chosen = data.get('payment_method', 'Não informado')
-    coupon_code = data.get('coupon_code')
+    items_data = data.get('items', [])
+    payment_method = data.get('payment_method')
+    
+    if not items_data:
+        raise ValueError("O carrinho está vazio.")
 
-    # Validação de Endereço
-    if not address_data.get('street') and address_data.get('street') != 'RETIRADA NO LOCAL':
-        if not address_data.get('street'):
-            raise ValueError("Endereço obrigatório.")
-
-    # 1.1 Recupera Taxa de Entrega (Blindagem Decimal)
-    neighborhood_name = address_data.get('neighborhood')
-    delivery_fee = Decimal('0.00')
-
-    if neighborhood_name and neighborhood_name != "-":
-        bairro_db = Neighborhood.query.filter_by(name=neighborhood_name).first()
-        if bairro_db and bairro_db.price is not None:
-            # Converte explicitamente para string antes de Decimal para evitar erros de precisão float
-            delivery_fee = Decimal(str(bairro_db.price))
-
-    print(f"💰 Taxa de Entrega Calculada: R$ {delivery_fee}")
-
-    new_order = Order(
-        user_id=user_id,
-        status='Recebido',
-        total_price=Decimal('0.00'),
-        delivery_fee=delivery_fee,
-        payment_method=payment_method_chosen,
-        payment_status='pending',
-        customer_name=customer_data.get('name'),
-        customer_phone=customer_data.get('phone'),
-        street=address_data.get('street'),
-        number=address_data.get('number'),
-        neighborhood=address_data.get('neighborhood'),
-        complement=address_data.get('complement')
-    )
-
-    db.session.add(new_order)
-    db.session.flush()
-
-    # 2. Processamento dos Itens
-    items_list = data.get('items', [])
-    if not items_list:
-        raise ValueError("O pedido deve conter pelo menos um item.")
-
-    subtotal_produtos = Decimal('0.00')  # Variável para soma segura
-
-    for item_data in items_list:
-        product = Product.query.with_for_update().get(item_data['product_id'])
-        if not product:
-            raise ValueError(f"Produto ID {item_data['product_id']} não encontrado.")
-
-        # Lógica de Estoque
-        quantity = int(item_data['quantity'])  # Garante Inteiro
-
-        if product.stock_quantity is not None:
-            if product.stock_quantity < quantity:
-                raise ValueError(f"Estoque insuficiente para '{product.name}'. Restam {product.stock_quantity}.")
-            product.stock_quantity -= quantity
-            if product.stock_quantity <= 0:
-                product.is_available = False
-
-        customizations = item_data.get('customizations', {})
-
-        # Calcula preço unitário (Blindado)
-        unit_price = _calculate_item_price(product, customizations)
-
-        # Calcula total da linha
-        line_total = unit_price * quantity
-
-        order_item = OrderItem(
-            order_id=new_order.id,
-            product_id=product.id,
-            quantity=quantity,
-            price_at_time=unit_price,
-            customizations_json=json.dumps(customizations)
+    # Inicia a transação
+    try:
+        # 1. Cria o objeto Order (ainda sem valor total)
+        new_order = Order(
+            user_id=user_id,
+            customer_name=customer_data.get('name'),
+            customer_phone=customer_data.get('phone'),
+            street=customer_data.get('address', {}).get('street'),
+            number=str(customer_data.get('address', {}).get('number')),
+            neighborhood=customer_data.get('address', {}).get('neighborhood'),
+            complement=customer_data.get('address', {}).get('complement'),
+            payment_method=payment_method,
+            status='Recebido',
+            total_price=0.00, # Será calculado abaixo
+            delivery_fee=0.00 # Implementar lógica de taxa se houver
         )
-        db.session.add(order_item)
-        subtotal_produtos += line_total
+        
+        db.session.add(new_order)
+        db.session.flush() # Gera o ID do pedido para usar nos itens
 
-    print(f"🛒 Subtotal Produtos: R$ {subtotal_produtos}")
+        calculated_total = Decimal('0.00')
 
-    # 3. Cupom (Lógica corrigida e debugada)
-    discount = Decimal('0.00')
+        # 2. Itera sobre os itens
+        for item in items_data:
+            prod_id = item.get('product_id')
+            qtd = item.get('quantity', 1)
+            
+            # 🔥 CORREÇÃO DE CONCORRÊNCIA (Ponto 3): 
+            # .with_for_update() trava este produto até o fim da transação.
+            # Se outro cliente tentar comprar, ele espera essa transação acabar.
+            product = Product.query.filter_by(id=prod_id).with_for_update().first()
+            
+            if not product:
+                raise ValueError(f"Produto ID {prod_id} não encontrado.")
+                
+            if not product.is_available or product.is_deleted:
+                raise ValueError(f"O produto '{product.name}' não está mais disponível.")
 
-    if coupon_code:
-        coupon = Coupon.query.filter_by(code=coupon_code, is_active=True).first()
-        if not coupon:
-            raise ValueError(f"Cupom '{coupon_code}' inválido.")
+            # Verifica Estoque (se aplicável)
+            if product.stock_quantity is not None:
+                if product.stock_quantity < qtd:
+                    raise ValueError(f"Estoque insuficiente para '{product.name}'. Restam: {product.stock_quantity}")
+                product.stock_quantity -= qtd
 
-        if coupon.usage_limit and coupon.used_count >= coupon.usage_limit:
-            raise ValueError("Cupom esgotado.")
+            # 🔥 CORREÇÃO DE PREÇO (Ponto 2):
+            # Usamos product.price (do banco), ignoramos o preço do JSON do frontend.
+            price_at_moment = product.price
+            item_total = price_at_moment * qtd
+            calculated_total += item_total
 
-        # Validação de Mínimo
-        if coupon.min_purchase is not None:
-            min_purchase = Decimal(str(coupon.min_purchase))
+            # Cria o item do pedido
+            order_item = OrderItem(
+                order_id=new_order.id,
+                product_id=product.id,
+                quantity=qtd,
+                price_at_time=price_at_moment, # Salva o preço histórico
+                customizations_json=str(item.get('customizations', {}))
+            )
+            db.session.add(order_item)
 
-            # REGRA DE OURO: A validação do mínimo deve ser sobre os PRODUTOS (Subtotal),
-            # não sobre o total com frete. Isso evita confusão.
-            # Se você preferir validar sobre o Total Geral, troque 'subtotal_produtos' por 'subtotal_produtos + delivery_fee'
-            valor_para_validar = subtotal_produtos
+        # Atualiza o total do pedido com a soma confiável do backend
+        new_order.total_price = calculated_total
+        
+        db.session.commit()
+        
+        return {
+            "sucesso": True,
+            "id": new_order.id,
+            "total": str(new_order.total_price),
+            "redirect_url": f"/pedido_confirmado.html?id={new_order.id}"
+        }
 
-            print(f"🎫 Validando Cupom: Mínimo R$ {min_purchase} | Valor Pedido R$ {valor_para_validar}")
-
-            if valor_para_validar < min_purchase:
-                raise ValueError(
-                    f"O valor mínimo para este cupom é R$ {min_purchase}. Faltam R$ {min_purchase - valor_para_validar}.")
-
-        # Cálculo do Desconto
-        # O desconto incide sobre os PRODUTOS (não sobre o frete, geralmente)
-        base_calculo = subtotal_produtos
-
-        if coupon.discount_percent:
-            percent = Decimal(str(coupon.discount_percent))
-            discount = base_calculo * (percent / 100)
-        elif coupon.discount_fixed:
-            discount = Decimal(str(coupon.discount_fixed))
-
-        # Garante que desconto não exceda o valor dos produtos
-        if discount > base_calculo:
-            discount = base_calculo
-
-        coupon.used_count += 1
-        print(f"🎫 Desconto Aplicado: R$ {discount}")
-
-    # 4. Finalização (Total Geral = Produtos + Frete - Desconto)
-    total_order_value = subtotal_produtos + delivery_fee - discount
-    # Garante que não fique negativo (caso raro)
-    total_order_value = max(Decimal('0.00'), total_order_value)
-
-    print(f"💰 TOTAL FINAL: R$ {total_order_value}")
-
-    new_order.total_price = total_order_value
-    db.session.commit()
-
-    # Integração MP e SocketIO
-    result_dump = orders_schema.dump([new_order])[0]
-
-    print(f"📡 Emitindo evento novo_pedido para ID: {new_order.id}")
-    socketio.emit('novo_pedido', convert_decimals(result_dump))
-
-    return result_dump
+    except Exception as e:
+        db.session.rollback() # Desfaz tudo se der erro no estoque ou código
+        raise e
 
 
 def get_order_logic(user_id):

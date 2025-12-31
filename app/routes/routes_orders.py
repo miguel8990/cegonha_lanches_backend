@@ -2,7 +2,7 @@ from flask import Blueprint, jsonify, request
 from app import services
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from app.schemas import order_schema
-from ..decorators import admin_required
+from ..decorators import admin_required, verified_user_required
 from datetime import datetime  # <--- FALTAVA ISTO
 from app.extensions import limiter
 bp_orders = Blueprint('orders', __name__)
@@ -14,6 +14,7 @@ bp_orders = Blueprint('orders', __name__)
 
 @bp_orders.route('/create', methods=['POST'])
 @jwt_required()
+@verified_user_required()
 @limiter.limit("200 per hour", error_message="Muitas requisições, tente novamente mais tarde.")
 def create_order():
     data = request.get_json()
@@ -23,7 +24,7 @@ def create_order():
         return jsonify({'error': 'Usuário não autenticado.'}), 401
 
     try:
-        result = services.order_service.create_order_logic(data, user_id=user_id)
+        result = services.order_service.create_order_logic(user_id, data)
         # Se for dict (MP), retorna direto. Se for objeto, faz dump.
         if isinstance(result, dict):
             return jsonify(result), 201

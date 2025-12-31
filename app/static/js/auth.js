@@ -1,6 +1,5 @@
 // site/js/auth.js
 import { loginUser, API_BASE_URL, fetchCurrentUser } from "./api.js";
-import { openAuthModal } from "./main.js";
 import { showToast } from "./utils.js";
 // ==========================================
 //  GESTÃO DE SESSÃO (Interface Visual)
@@ -109,6 +108,79 @@ export function getToken() {
   return null;
 }
 
+function mostrarAvisoVerificacao(email) {
+  // Se você tiver um modal bonito, chame-o aqui.
+  // Por enquanto, vamos usar um confirm nativo ou um Toast persistente e claro.
+
+  const msg = `
+    ⚠️ AÇÃO NECESSÁRIA ⚠️
+    
+    Seu cadastro foi criado, mas você ainda não confirmou seu e-mail.
+    Por favor, verifique sua caixa de entrada (e spam) no e-mail informado.
+    
+    Clique em OK para fechar este aviso.`;
+
+  // Opção A: Alerta nativo (Simples e funcional)
+  alert(msg);
+
+  // Opção B: Se quiser ser mais proativo, pode oferecer reenvio do link aqui no futuro
+  // if(confirm("Deseja reenviar o email?")) { ... logica de reenvio ... }
+}
+
+const form = document.getElementById("standalone-login-form");
+
+if (form) {
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    // Pega elementos
+    const emailInput = document.getElementById("page-email");
+    const passInput = document.getElementById("page-password");
+    const btn = form.querySelector("button");
+
+    const email = emailInput.value;
+    const pass = passInput.value;
+    const txtOriginal = btn.innerText;
+
+    // Feedback de carregamento
+    btn.innerText = "Verificando...";
+    btn.disabled = true;
+
+    try {
+      // Chama API
+      const res = await loginUser(email, pass);
+
+      if (res.success) {
+        // SUCESSO
+        saveSession(null, res.user);
+        window.location.href = "index.html";
+      } else {
+        // ERRO - BIFURCAÇÃO DA LÓGICA
+        btn.innerText = txtOriginal;
+        btn.disabled = false;
+
+        // 1. Caso de E-mail não verificado (Código 403 específico do backend)
+        if (res.code === "email_not_verified") {
+          showToast("Conta pendente de verificação.", "warning");
+          mostrarAvisoVerificacao(email);
+        }
+        // 2. Caso de Credenciais Erradas ou outros erros
+        else {
+          showToast(res.error || "Email ou senha incorretos.", "error");
+          // Limpa senha para facilitar nova tentativa
+          passInput.value = "";
+          passInput.focus();
+        }
+      }
+    } catch (error) {
+      console.error("Erro crítico no login:", error);
+      showToast("Erro de conexão. Tente novamente.", "error");
+      btn.innerText = txtOriginal;
+      btn.disabled = false;
+    }
+  });
+}
+
 // ==========================================
 //  LÓGICA DE PÁGINAS (Magic Link & Login)
 // ==========================================
@@ -151,6 +223,8 @@ export async function checkMagicLinkReturn() {
       if (window.showCookieError) {
         window.showCookieError();
       } else {
+        console.error("ERRO: Cookie de terceiros bloqueado.");
+        clearSession();
         alert("Seu navegador bloqueou o login. Habilite cookies de terceiros.");
       }
     }
@@ -162,7 +236,7 @@ export async function checkMagicLinkReturn() {
 }
 
 // Formulário da página login.html (Standalone)
-const form = document.getElementById("standalone-login-form");
+
 if (form) {
   form.addEventListener("submit", async (e) => {
     e.preventDefault();

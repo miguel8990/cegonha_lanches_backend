@@ -2,13 +2,14 @@ from flask import request, jsonify, Blueprint
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from app.services.coment_service import (create_coment, get_all_coments,search_coment,
                                           delete_coment, delete_self_coment, update_coment)
-from app.decorators import admin_required
+from app.decorators import admin_required, verified_user_required
 from app.extensions import limiter
 
 bp_coment = Blueprint('avaliar', __name__)
 
 @bp_coment.route('', methods=['POST'])
 @jwt_required()
+@verified_user_required()
 @limiter.limit("30 per day", error_message="Muitas requisições, tente novamente mais tarde.")
 def avaliar_produto():
   dados = request.get_json()

@@ -192,10 +192,23 @@ export async function loginUser(email, password) {
       body: JSON.stringify({ email, password }),
     });
     const data = await response.json();
-    if (!response.ok) throw new Error(data.message || "Erro ao entrar");
-    // O backend já setou o cookie. Retornamos apenas o user para a UI.
+
+    // 🔥 CORREÇÃO CRÍTICA AQUI:
+    if (!response.ok) {
+      // Não lançamos erro com 'throw', retornamos o objeto de erro estruturado
+      // para que o auth.js possa ler o 'code'.
+      return {
+        success: false,
+        // O Backend usa a chave "error", mas garantimos fallback se usar "message"
+        error: data.error || data.message || "Erro ao entrar",
+        // Passamos o código específico (ex: "email_not_verified") adiante
+        code: data.code,
+      };
+    }
+
     return { success: true, user: data.user };
   } catch (error) {
+    // Erros de rede ou JSON inválido
     return { success: false, error: error.message };
   }
 }
@@ -207,7 +220,15 @@ export async function registerUser(userData) {
       body: JSON.stringify(userData),
     });
     const data = await response.json();
-    if (!response.ok) throw new Error(data.message || "Erro ao cadastrar");
+
+    // 🔥 CORREÇÃO AQUI TAMBÉM:
+    if (!response.ok) {
+      return {
+        success: false,
+        error: data.error || data.message || "Erro ao cadastrar",
+      };
+    }
+
     return { success: true, user: data.user };
   } catch (error) {
     return { success: false, error: error.message };

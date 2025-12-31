@@ -399,7 +399,7 @@ function initAuthModalLogic() {
 
       if (res.success) {
         // Salva sessão (Cookies) e atualiza a tela
-        saveSession(res.token, res.user);
+        saveSession(null, res.user);
         checkLoginState();
         closeAuthModal();
         showToast(
@@ -458,6 +458,7 @@ function initAuthModalLogic() {
         );
 
         regForm.reset();
+        if (window.switchAuthTab) window.switchAuthTab("login");
       } else {
         showToast(res.error);
       }
@@ -1093,8 +1094,8 @@ function initContactForm() {
     }
 
     // Verifica Login
-    const { token } = getSession();
-    if (!token) {
+    const { logged } = getSession();
+    if (!logged) {
       abrirModalLogin(
         "Para finalizar o pedido, é necessário entrar ou cadastrar-se."
       );
@@ -2545,7 +2546,6 @@ window.prepararEAbrirModal = function (id) {
 async function enviarAvaliacao() {
   const stars = document.getElementById("rating-value").value;
   const coment = document.getElementById("texto-avaliacao").value;
-  const token = localStorage.getItem("access_token");
 
   if (stars == 0)
     return showToast("Por favor, selecione uma nota (estrelas).", "warning");
@@ -2555,8 +2555,8 @@ async function enviarAvaliacao() {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
     },
+    credentials: "include",
     body: JSON.stringify({ stars: stars, coment: coment }),
   });
 
@@ -2583,12 +2583,12 @@ async function enviarAvaliacao() {
 async function deletarMinhaAvaliacao(id) {
   if (!confirm("Deseja realmente apagar seu comentário?")) return;
 
-  const token = localStorage.getItem("access_token");
   const res = await fetch(`/api/avaliar/${id}`, {
     method: "DELETE",
     headers: {
-      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
     },
+    credentials: "include",
   });
 
   if (res.ok) {
@@ -2661,7 +2661,6 @@ window.cancelarEdicao = function () {
 window.salvarEdicao = async function () {
   const novoTexto = document.getElementById("edit-comment-input")?.value;
   const novasStars = document.getElementById("edit-stars-input")?.value;
-  const token = localStorage.getItem("access_token");
 
   if (!novoTexto?.trim())
     return showToast("O comentário não pode ficar vazio.", "warning");
@@ -2671,8 +2670,8 @@ window.salvarEdicao = async function () {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
       },
+      credentials: "include",
       body: JSON.stringify({ coment: novoTexto, stars: novasStars }),
     });
 

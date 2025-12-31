@@ -1,7 +1,7 @@
 from flask import Blueprint, jsonify, request, redirect, make_response, render_template
 from app.services import auth_service, config_service
 from flask_jwt_extended import jwt_required, get_jwt_identity, unset_jwt_cookies, set_access_cookies
-from app.decorators import super_admin_required
+from app.decorators import super_admin_required, verified_user_required
 from app.extensions import limiter
 from flask_jwt_extended import get_jwt
 from app.models import User, db
@@ -20,23 +20,12 @@ def register():
     registro = auth_service.register_user(data)
 
     if registro['sucesso']:
-        # 🔥 CORREÇÃO: Criar e setar o token imediatamente após registro
-        user_id = registro.get('id')
-        token = auth_service.create_token(user_id)
+        
 
-        resp = jsonify({
-            "message": "Cadastro realizado! Verifique seu email.",
-            "user": {
-                "id": user_id,
-                "name": data.get('name'),
-                "email": data.get('email'),
-                "role": "client"
-            }
-        })
-
-        # 🔥 SETA O COOKIE IMEDIATAMENTE
-        set_access_cookies(resp, token)
-        return resp, 201
+        return jsonify({
+            "message": "Cadastro realizado! Por favor, verifique seu email para ativar a conta.",
+            "require_verification": True 
+        }), 201
     else:
         return jsonify({"error": registro.get('erro', 'Erro desconhecido')}), 400
 
@@ -54,8 +43,13 @@ def login():
         return jsonify({"error": resultado.get('message', 'Credenciais inválidas')}), 401
 
     user_data = resultado["user"]
+    if not user_data.get('is_verified'):
+        return jsonify({
+            "error": "Email não verificado. Verifique sua caixa de entrada.",
+            "code": "email_not_verified" # Código útil para o front tratar diferente se quiser
+        }), 403
     access_token = auth_service.create_token(user_data["id"])
-
+    
     resp = jsonify({
         "user": user_data,
         "message": "Login realizado com sucesso"
@@ -127,6 +121,7 @@ def request_magic_link():
 # =============================================================================
 @bp_auth.route('/update', methods=['PUT'])
 @jwt_required()
+@verified_user_required()
 @limiter.limit("10 per hour", error_message="Muitas tentativas, tente novamente mais tarde.")
 def update_profile():
     user_id = get_jwt_identity()
