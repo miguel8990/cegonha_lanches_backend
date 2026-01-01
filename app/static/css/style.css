@@ -683,8 +683,7 @@ h2.section-title::after {
 
 /* Foco (Glow Dourado) */
 .form-group input:focus,
-.form-group textarea:focus,
-select#bairro:focus {
+.form-group textarea:focus {
   outline: none;
   border-color: var(--color-gold);
   box-shadow: 0 0 0 3px rgba(242, 201, 76, 0.15);
@@ -841,14 +840,6 @@ select#bairro:focus {
 .payment-option input:checked + .payment-box i {
   color: var(--color-gold);
   transform: scale(1.1);
-}
-
-/* Efeito de Endereço Desativado */
-.address-disabled {
-  opacity: 0.4;
-  pointer-events: none;
-  filter: grayscale(1);
-  transition: 0.3s;
 }
 
 /* =========================================
@@ -2627,11 +2618,7 @@ footer {
 }
 
 /* Cores dos Status */
-.st-pending {
-  background: rgba(255, 255, 255, 0.1);
-  color: #ccc;
-  border: 1px solid #555;
-} /* Pendente */
+
 .st-prep {
   background: rgba(242, 201, 76, 0.15);
   color: var(--color-gold);
@@ -2705,24 +2692,6 @@ footer {
 .order-total strong {
   color: var(--color-gold);
   font-size: 1.1rem;
-}
-
-/* Botão "Ver Detalhes" ou "Repetir" */
-.btn-order-action {
-  background: transparent;
-  border: 1px solid #444;
-  color: #ccc;
-  padding: 6px 12px;
-  border-radius: 6px;
-  font-size: 0.8rem;
-  cursor: pointer;
-  transition: 0.2s;
-}
-
-.btn-order-action:hover {
-  border-color: #fff;
-  color: #fff;
-  background: rgba(255, 255, 255, 0.05);
 }
 
 /* =========================================
@@ -4439,7 +4408,7 @@ ul.magic-text-body li span {
   /* Cores e Bordas Vivas */
   background-color: #151515; /* Fundo Deep Dark */
   color: #fff; /* Texto Branco Brilhante */
-  border: 2px solid var(--color-red); /* Borda Vermelha da Marca */
+  border: 2px solid var(--color-gold); /* Borda Vermelha da Marca */
   border-radius: var(--border-radius);
 
   /* Tipografia */
@@ -4501,7 +4470,7 @@ ul.magic-text-body li span {
 
   padding: 20px;
   background-color: #151515;
-  border: 2px solid #444; /* Borda neutra quando inativo */
+  border: 2px solid #fff3f3; /* Borda neutra quando inativo */
   border-radius: 12px;
   cursor: pointer;
   transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
@@ -4510,8 +4479,17 @@ ul.magic-text-body li span {
 
 /* Hover */
 #retirada-local-label:hover {
-  background-color: #1f1f1f;
-  border-color: #666;
+  /* 1. Fundo Dourado Muito Suave (5% de opacidade para não tampar) */
+  background-color: rgba(242, 201, 76, 0.05);
+
+  /* 2. Borda Dourada Definida */
+  border-color: var(--color-gold);
+
+  /* 3. O Efeito de Brilho Real (Glow) */
+  box-shadow: 0 0 15px rgba(242, 201, 76, 0.4),
+    /* Brilho externo difuso */ inset 0 0 20px rgba(242, 201, 76, 0.1); /* Brilho interno suave */
+
+  /* Mantém o pulinho para cima */
   transform: translateY(-2px);
 }
 
@@ -4562,7 +4540,7 @@ ul.magic-text-body li span {
   align-items: center;
 
   background: linear-gradient(135deg, #1a1a1a 0%, #111 100%);
-  border: 1px dashed var(--color-red); /* Borda tracejada estilo "cupom/ticket" */
+  border: 1px dashed var(--color-gold); /* Borda tracejada estilo "cupom/ticket" */
   border-radius: 12px;
   padding: 18px 25px;
   margin-top: 20px;
@@ -4580,7 +4558,7 @@ ul.magic-text-body li span {
   top: 0;
   height: 100%;
   width: 5px;
-  background-color: var(--color-red);
+  background-color: var(--color-gold);
 }
 
 /* Texto "Taxa de Entrega" */
@@ -4593,7 +4571,7 @@ ul.magic-text-body li span {
 }
 
 .delivery-fee-label i {
-  color: var(--color-red);
+  color: var(--color-gold);
   font-size: 1.3rem;
   background: rgba(217, 48, 37, 0.1);
   padding: 8px;
@@ -4631,7 +4609,7 @@ ul.magic-text-body li span {
   /* Cores e Bordas */
   background-color: #151515;
   color: #fff;
-  border: 2px solid var(--color-red); /* Borda Vermelha */
+  border: 2px solid var(--color-gold); /* Borda Vermelha */
   border-radius: var(--border-radius);
 
   /* Tipografia */
@@ -4667,4 +4645,108 @@ ul.magic-text-body li span {
   outline: none;
   border-color: var(--color-gold);
   box-shadow: 0 0 0 3px rgba(242, 201, 76, 0.2);
+}
+
+/* =========================================
+   CONTROLES DE QUANTIDADE NO CARRINHO
+   ========================================= */
+
+/* O Container dos botões e do número */
+.cart-qty-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px; /* Espaço entre botões */
+  background-color: rgba(0, 0, 0, 0.3); /* Fundo levemente escuro */
+  padding: 4px 8px;
+  border-radius: 20px; /* Formato de pílula */
+  border: 1px solid #333;
+  margin-left: 10px; /* Separa do texto do produto */
+}
+
+/* Os Botões de + e - */
+.cart-qty-controls button {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%; /* Faz ficar redondo */
+  border: 1px solid var(--color-gold); /* Borda Dourada */
+  background: transparent;
+  color: var(--color-gold); /* Texto Dourado */
+
+  font-size: 1.1rem;
+  font-weight: 700;
+  line-height: 1; /* Centraliza verticalmente o + e - */
+
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  padding: 0; /* Remove padding padrão do navegador */
+}
+
+/* Efeito Hover (Ao passar o mouse) */
+.cart-qty-controls button:hover {
+  background-color: var(--color-gold); /* Fica todo dourado */
+  color: var(--color-black); /* Sinal vira preto */
+  transform: scale(1.1); /* Cresce um pouquinho */
+  box-shadow: 0 0 8px rgba(242, 201, 76, 0.4); /* Brilho */
+}
+
+/* O Número (Quantidade) */
+.cart-qty-controls span {
+  font-family: var(--font-main);
+  font-weight: 600;
+  color: #fff;
+  min-width: 20px; /* Garante largura fixa para não pular */
+  text-align: center;
+  font-size: 0.95rem;
+}
+
+/* =========================================
+   ESTILO DOS LABELS (TEXTOS DO FORMULÁRIO)
+   ========================================= */
+
+.form-group label {
+  display: block;
+  margin-bottom: 10px; /* Um pouco mais de espaço embaixo */
+
+  /* --- Tipografia de Destaque --- */
+  color: var(--color-gold); /* Cor Dourada Principal */
+  font-size: 1.15rem; /* Aumentado (era 0.95rem) */
+  font-weight: 700; /* Negrito para dar peso */
+  text-transform: uppercase; /* Letras maiúsculas para impor presença */
+  letter-spacing: 1px; /* Espaçamento elegante entre letras */
+
+  /* --- O Efeito de Brilho (Neon Dourado) --- */
+  text-shadow: 0 0 10px rgba(242, 201, 76, 0.5),
+    /* Glow difuso */ 0 0 20px rgba(242, 201, 76, 0.2); /* Glow externo mais fraco */
+
+  transition: all 0.3s ease;
+}
+
+/* Efeito extra: Quando o usuário clica no campo, o label brilha mais */
+.form-group:focus-within label {
+  color: #fff; /* O texto fica branco (núcleo quente) */
+  text-shadow: 0 0 10px var(--color-gold), 0 0 20px var(--color-gold); /* O brilho dourado fica intenso */
+  transform: translateX(5px); /* Move levemente para a direita indicando foco */
+}
+
+/* =========================================
+   TÍTULOS DE SEÇÃO DO FORMULÁRIO
+   ========================================= */
+
+.form-section-title {
+  color: var(--color-gold);
+  text-align: center; /* Centraliza o texto */
+
+  margin-top: 10px;
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+
+  border-bottom: 1px solid #333; /* Linha divisória cinza escura */
+  width: 100%; /* Garante que a linha vá até o final */
+  text-transform: uppercase;
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
 }
