@@ -892,4 +892,126 @@ td {
     grid-template-columns: 1fr;
     gap: 15px;
   }
+} /*final do @media*/
+
+/* =========================================
+   ESTILO DA LISTA DE ADICIONAIS (ADMIN)
+   ========================================= */
+
+/* Container da lista */
+#details-container {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  margin-top: 15px;
+}
+
+/* O Card de cada item */
+.detail-row {
+  display: flex;
+  flex-wrap: wrap; /* Permite quebrar linha (Input vai pra baixo) */
+  align-items: center;
+  gap: 10px;
+
+  background-color: #1a1a1a;
+  padding: 15px;
+  border: 1px solid #333;
+  border-radius: var(--border-radius);
+}
+
+/* 1. Dropdown (Select) - Lado Esquerdo */
+/* Usamos .detail-row na frente para vencer o style.css */
+.detail-row .detail-key {
+  order: 1;
+  width: 80% !important; /* O !important garante que vença o 100% global */
+  min-width: 130px;
+  flex-grow: 0;
+
+  padding: 10px;
+  height: 42px; /* Altura fixa para alinhar com o botão */
+
+  background-color: #000;
+  color: var(--color-gold);
+  border: 1px solid #444;
+  border-radius: 6px;
+  font-family: var(--font-main);
+  cursor: pointer;
+  outline: none;
+}
+
+/* 2. Botão X - Lado Direito (Colado no Dropdown) */
+.detail-row .btn-remove-detail {
+  order: 2;
+
+  width: 42px;
+  height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  background-color: rgba(217, 48, 37, 0.15);
+  color: var(--color-red);
+  border: 1px solid var(--color-red);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.detail-row .btn-remove-detail:hover {
+  background-color: var(--color-red);
+  color: white;
+}
+
+/* 3. Input de Texto - Linha de Baixo (100% largura) */
+.detail-row .detail-val {
+  order: 3;
+  flex-basis: 100%; /* Força quebra de linha */
+  width: 100%; /* Ocupa toda a linha de baixo */
+  margin-top: 8px; /* Espaço entre a linha de cima */
+
+  height: 45px;
+  padding: 0 15px;
+
+  background-color: #000;
+  color: #fff;
+  border: 1px solid #444;
+  border-radius: 6px;
+  font-family: var(--font-main);
+  outline: none;
+}
+
+.detail-row .detail-val:focus {
+  border-color: var(--color-gold);
+}
+/* Botão de Adicionar Item (Estilo Premium) */
+.btn-add-item {
+  background-color: transparent;
+  color: var(--color-gold);
+  border: 1px dashed var(--color-gold); /* Borda tracejada indica "espaço para mais" */
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+
+  font-family: var(--font-main);
+  font-weight: 600;
+  font-size: 0.9rem;
+
+  display: flex;
+  align-items: center;
+  gap: 8px; /* Espaço entre ícone e texto */
+  transition: all 0.3s ease;
+}
+
+.btn-add-item:hover {
+  background-color: rgba(242, 201, 76, 0.1); /* Fundo dourado transparente */
+  transform: translateY(-2px);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+}
+
+.btn-add-item:active {
+  transform: scale(0.98);
+}
+
+#prod-desc {
+  height: 200px;
 }

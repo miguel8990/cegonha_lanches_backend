@@ -221,6 +221,21 @@ document.addEventListener("DOMContentLoaded", async () => {
       }
     }
   });
+
+  // Seleciona inputs por ID comum ou tipo 'tel'
+  const phoneInputs = document.querySelectorAll(
+    '#whatsapp, input[name="whatsapp"], input[type="tel"]'
+  );
+
+  phoneInputs.forEach((input) => {
+    // Garante atributos corretos para mobile
+    input.setAttribute("maxlength", "15");
+    input.setAttribute("inputmode", "numeric"); // Abre teclado numérico no celular
+
+    input.addEventListener("input", (e) => {
+      mascaraTelefone(e.target);
+    });
+  });
 });
 
 // EXPORTA FUNÇÕES PARA O HTML USAR (onclick="")
@@ -2841,3 +2856,34 @@ window.deletarMinhaAvaliacao = deletarMinhaAvaliacao;
 window.carregarAvaliacoes = carregarAvaliacoes;
 window.iniciarSistemaEstrelas = iniciarSistemaEstrelas;
 window.prepararEAbrirModal = prepararEAbrirModal;
+
+// ============================================================
+//  MÁSCARA DE TELEFONE / WHATSAPP
+// ============================================================
+
+/**
+ * Aplica a máscara (DD) 00000-0000 no input enquanto o usuário digita
+ */
+function mascaraTelefone(input) {
+  let value = input.value.replace(/\D/g, ""); // Remove tudo que não é número
+
+  // Limita a 11 números (DDD + 9 + 8 dígitos)
+  if (value.length > 11) value = value.slice(0, 11);
+
+  // Aplica a formatação
+  if (value.length > 10) {
+    // Formato (DD) 9XXXX-XXXX
+    value = value.replace(/^(\d{2})(\d{5})(\d{4}).*/, "($1) $2-$3");
+  } else if (value.length > 5) {
+    // Formato (DD) 9XXXX... (enquanto digita)
+    value = value.replace(/^(\d{2})(\d{4})(\d{0,4}).*/, "($1) $2-$3");
+  } else if (value.length > 2) {
+    // Formato (DD) ...
+    value = value.replace(/^(\d{2})(\d{0,5})/, "($1) $2");
+  } else {
+    // Apenas números iniciais
+    value = value.replace(/^(\d*)/, "$1");
+  }
+
+  input.value = value;
+}

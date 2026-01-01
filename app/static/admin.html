@@ -642,28 +642,57 @@
                 margin-top: 15px;
               "
             >
-              <label
+              <div
+                class="options-header"
                 style="
-                  color: var(--color-gold);
-                  display: flex;
                   justify-content: space-between;
                   align-items: center;
+                  margin-bottom: 10px;
                 "
               >
-                Personalização / Opções
+                <label
+                  style="
+                    color: var(--color-gold);
+                    font-weight: 600;
+                    font-size: 1.1rem;
+                    margin: 0;
+                  "
+                >
+                  <i class="fas fa-list-ul"></i> Personalização / Opções
+                </label>
+              </div>
+
+              <div
+                style="
+                  font-size: 0.85rem;
+                  color: #888;
+                  margin-bottom: 15px;
+                  background: #111;
+                  padding: 8px;
+                  border-radius: 4px;
+                  border-left: 3px solid #555;
+                "
+              >
+                <i class="fas fa-info-circle"></i>
+                Use o formato: <b>Nome do Item</b> (sem custo) ou
+                <b>Nome - Preço</b> (custo extra). <br />Ex: <i>Bacon - 3.00</i>
+              </div>
+              <div>
                 <button
                   type="button"
-                  class="btn-small"
-                  onclick="addDetailRow()"
-                  style="background: #333; color: white"
+                  class="btn-add-item"
+                  onclick="addDetailRow('adicionais', '', true)"
+                  style="
+                    background: #333;
+                    color: white;
+                    border: 1px solid #555;
+                    padding: 8px 15px;
+                    border-radius: 6px;
+                    cursor: pointer;
+                  "
                 >
-                  + Adicionar
+                  + Adicionar Item
                 </button>
-              </label>
-
-              <div style="font-size: 0.8rem; color: #666; margin-bottom: 10px">
-                Formato: <i>Nome do item</i> ou <i>Nome - Preço</i> (Ex: Bacon -
-                3.00)
               </div>
 
               <div

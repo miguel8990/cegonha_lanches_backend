@@ -516,31 +516,49 @@ function closeProductModal() {
   document.getElementById("modal-product-admin").style.display = "none";
 }
 
-function addDetailRow(key = "adicionais", value = "") {
+function addDetailRow(key = "adicionais", value = "", isManual = false) {
   const container = document.getElementById("details-container");
   const div = document.createElement("div");
-  div.style.display = "flex";
-  div.style.gap = "5px";
-
-  const options = `
-    <option value="adicionais" ${
-      key === "adicionais" ? "selected" : ""
-    }>Adicional</option>
-    <option value="acompanhamentos" ${
-      key === "acompanhamentos" ? "selected" : ""
-    }>Acomp.</option>
-    <option value="bebidas" ${
-      key === "bebidas" ? "selected" : ""
-    }>Bebida</option>
-    <option value="carnes" ${key === "carnes" ? "selected" : ""}>Carne</option>
-  `;
+  div.className = "detail-row";
 
   div.innerHTML = `
-    <select class="detail-key" style="background:#111; color:white; border:1px solid #444; border-radius:4px; padding:5px;">${options}</select>
-    <input type="text" class="detail-val" value="${value}" placeholder="Ex: Bacon - 3.00" style="flex:1; background:#111; color:white; border:1px solid #444; border-radius:4px; padding:5px;">
-    <button type="button" onclick="window.removeDetailRow(this)" style="background:#333; color:#e74c3c; border:none; cursor:pointer; padding:0 10px;">&times;</button>
-  `;
+        <select class="detail-key">
+            <option value="adicionais" ${
+              key === "adicionais" ? "selected" : ""
+            }>Adicional</option>
+            <option value="acompanhamentos" ${
+              key === "acompanhamentos" ? "selected" : ""
+            }>Acomp.</option>
+            <option value="bebidas" ${
+              key === "bebidas" ? "selected" : ""
+            }>Bebida</option>
+            <option value="carnes" ${
+              key === "carnes" ? "selected" : ""
+            }>Carne</option>
+            <option value="opcoes" ${
+              key === "opcoes" ? "selected" : ""
+            }>Opção</option>
+        </select>
+        
+        <button type="button" class="btn-remove-detail" onclick="window.removeDetailRow(this)" title="Remover">
+            &times;
+        </button>
+        
+        <input type="text" class="detail-val" value="${value}" placeholder="Nome - Preço (Ex: Bacon - 3.00)">
+    `;
+
   container.appendChild(div);
+
+  // A MÁGICA: Só mostra o toast se for uma ação manual do usuário
+  if (isManual) {
+    showToast("+1 Item adicionado", "success");
+
+    // Opcional: Foca no input novo para facilitar a digitação
+    setTimeout(() => {
+      const inputs = container.querySelectorAll(".detail-val");
+      inputs[inputs.length - 1].focus();
+    }, 100);
+  }
 }
 
 function removeDetailRow(btn) {
