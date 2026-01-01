@@ -5,7 +5,7 @@ from app.decorators import super_admin_required, verified_user_required
 from app.extensions import limiter
 from flask_jwt_extended import get_jwt
 from app.models import User, db
-import os
+
 
 bp_auth = Blueprint('auth', __name__)
 
@@ -217,6 +217,7 @@ def get_user_data():
 # =============================================================================
 # 🔑 RESET DE SENHA
 # =============================================================================
+"""
 @bp_auth.route('/forgot-password', methods=['POST'])
 @limiter.limit("3 per hour", error_message="Muitas tentativas, tente novamente mais tarde.")
 def forgot_password():
@@ -246,7 +247,7 @@ def reset_password_confirm():
         return jsonify({'error': str(e)}), 400
     except Exception:
         return jsonify({'error': 'Link expirado ou inválido.'}), 422
-
+"""
 
 # =============================================================================
 # 👑 ADMIN ROUTES

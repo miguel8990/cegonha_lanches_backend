@@ -15,7 +15,7 @@ def create_app():
     # CORREÇÃO: Detecção robusta de Produção
     # ==========================================================================
     # Se FLASK_ENV for production OU se estiver rodando no Render ('RENDER' existe)
-    is_production = os.getenv('FLASK_ENV') == 'production' or os.getenv('RENDER') is not None
+    is_production = os.getenv('RENDER') is not None
 
     if is_production:
         # ProxyFix é essencial no Render para HTTPS funcionar

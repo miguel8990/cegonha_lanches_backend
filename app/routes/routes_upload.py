@@ -4,6 +4,7 @@ from app.decorators import admin_required
 import cloudinary
 import cloudinary.uploader
 import cloudinary.api
+import magic
 
 bp_upload = Blueprint('upload', __name__)
 
@@ -17,7 +18,7 @@ cloudinary.config(
 
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'webp'}
 MAX_FILE_SIZE = 5 * 1024 * 1024  # Aumentei para 5MB para ser mais permissivo
-
+ALLOWED_MIME_TYPES = {'image/jpeg', 'image/png', 'image/webp', 'image/jpg'} # Tipos reais permitidos
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
@@ -41,6 +42,25 @@ def upload_file():
 
     if file_size > MAX_FILE_SIZE:
         return jsonify({'error': 'Arquivo muito grande! Máximo permitido: 5MB'}), 413
+    
+    try:
+        # Lê os primeiros 2KB do arquivo (o cabeçalho é suficiente para identificar)
+        header_bytes = file.read(2048)
+        
+        # Identifica o tipo real do arquivo (ex: 'image/jpeg')
+        mime_type = magic.from_buffer(header_bytes, mime=True)
+        
+        # IMPORTANTE: Como lemos o arquivo, o "ponteiro" andou. 
+        # Precisamos voltar para o início (0), senão o Cloudinary vai receber um arquivo cortado/vazio.
+        file.seek(0) 
+
+        print(f"🔍 Tipo detectado: {mime_type}") # Log para debug
+
+        if mime_type not in ALLOWED_MIME_TYPES:
+            return jsonify({'error': f'Arquivo inválido. Tipo detectado: {mime_type}'}), 400
+
+    except Exception as e:
+        return jsonify({'error': f'Erro ao validar arquivo: {str(e)}'}), 500
 
     if file and allowed_file(file.filename):
         try:

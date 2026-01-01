@@ -4,9 +4,9 @@ import datetime
 import os
 import bleach
 import secrets
-from app.models import User, Order, ChatMessage, Coments, Address, db
+from app.models import User, Order, ChatMessage, Coments, db
 from flask_jwt_extended import create_access_token, decode_token
-from app.services.email_services import send_verification_email, send_magic_link_email, send_reset_email
+from app.services.email_services import send_verification_email, send_magic_link_email
 
 
 # --- FUNÇÃO AUXILIAR DE VALIDAÇÃO ---
@@ -241,17 +241,14 @@ def update_user_info(user_id, data):
         'address': active_address or {}
     }
 
-
+"""
 def request_password_reset(email):
-    """
-    1. Verifica se e-mail existe.
-    2. Gera token temporário.
-    3. Envia e-mail.
-    """
+    
     user = User.query.filter_by(email=email).first()
     if not user:
+        time.sleep(random.uniform(0.5, 1.5))
         # Por segurança, não dizemos se o e-mail existe ou não
-        return False
+        return True
 
     # Gera um token JWT específico para reset, expirando em 30min
     reset_token = create_access_token(
@@ -271,9 +268,7 @@ def request_password_reset(email):
 
 
 def reset_password_with_token(user_id, new_password):
-    """
-    Efetiva a troca. O user_id já vem extraído e validado do token na rota.
-    """
+    
     user = User.query.get(user_id)
     if not user:
         raise ValueError("Usuário inválido.")
@@ -286,7 +281,7 @@ def reset_password_with_token(user_id, new_password):
     user.password_hash = generate_password_hash(new_password)
     db.session.commit()
     return True
-
+"""
 
 def login_with_google(token):
     """

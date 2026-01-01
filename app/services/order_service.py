@@ -210,6 +210,10 @@ def cancel_order_by_client_logic(order_id, user_id):
     if str(order.user_id) != str(user_id): raise ValueError("Não autorizado")
     if order.status != 'Recebido': raise ValueError("Já em preparo")
 
+    for item in order.items:
+        if item.product.stock_quantity is not None:
+            item.product.stock_quantity += item.quantity
+
     order.status = 'Cancelado'
     db.session.commit()
     return order
