@@ -669,8 +669,7 @@ h2.section-title::after {
 
 /* Estilo Base dos Campos */
 .form-group input,
-.form-group textarea,
-select#bairro {
+.form-group textarea {
   width: 100%;
   padding: 14px 16px; /* Mais espaço interno */
   background-color: #121212; /* Fundo bem escuro para contraste */
@@ -4420,4 +4419,252 @@ ul.magic-text-body li span {
   background-color: #1a1a1a;
   color: #fff;
   padding: 10px;
+}
+
+/* =========================================
+   ESTILO GLOBAL DOS CAMPOS (VIVID STYLE)
+   ========================================= */
+
+/* Aplica o novo visual a todos os inputs de texto, selects e textareas dentro do form */
+.form-group input[type="text"],
+.form-group input[type="tel"],
+.form-group input[type="email"],
+.form-group textarea,
+.form-group select {
+  width: 100%;
+  padding: 16px 20px; /* Espaçamento generoso */
+  height: auto;
+  min-height: 55px; /* Altura mínima para ficar robusto */
+
+  /* Cores e Bordas Vivas */
+  background-color: #151515; /* Fundo Deep Dark */
+  color: #fff; /* Texto Branco Brilhante */
+  border: 2px solid var(--color-red); /* Borda Vermelha da Marca */
+  border-radius: var(--border-radius);
+
+  /* Tipografia */
+  font-family: var(--font-main);
+  font-size: 1.1rem; /* Texto maior */
+  font-weight: 500;
+
+  /* Efeitos */
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(217, 48, 37, 0.1); /* Glow vermelho suave */
+}
+
+/* Estado de Foco (Quando clica) */
+.form-group input:focus,
+.form-group textarea:focus,
+.form-group select:focus {
+  outline: none;
+  border-color: var(--color-gold); /* Muda para Dourado */
+  background-color: #1a1a1a;
+  box-shadow: 0 0 0 4px rgba(242, 201, 76, 0.15); /* Halo Dourado */
+  transform: translateY(-2px);
+}
+
+/* Placeholder (Texto de ajuda) */
+.form-group input::placeholder,
+.form-group textarea::placeholder {
+  color: #666;
+  font-weight: 400;
+}
+
+/* Ícones dentro dos inputs (ajuste de posição para o novo tamanho) */
+.input-icon i {
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 1.2rem;
+  left: 20px; /* Mais para dentro */
+}
+.input-icon input {
+  padding-left: 55px !important; /* Espaço para o ícone */
+}
+
+/* =========================================
+   BOTÃO DE RETIRADA NO LOCAL (CARD)
+   ========================================= */
+
+/* O Container do Botão */
+#retirada-local-box {
+  margin: 20px 0;
+}
+
+/* O Label que age como botão */
+#retirada-local-label {
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  gap: 15px;
+  width: 100%;
+  max-width: 100% !important; /* Força largura total */
+
+  padding: 20px;
+  background-color: #151515;
+  border: 2px solid #444; /* Borda neutra quando inativo */
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+}
+
+/* Hover */
+#retirada-local-label:hover {
+  background-color: #1f1f1f;
+  border-color: #666;
+  transform: translateY(-2px);
+}
+
+/* ESTADO ATIVO (Quando marcado) */
+/* Usa o seletor :has() para estilizar o pai quando o input filho está checked */
+#retirada-local-label:has(input:checked) {
+  background-color: rgba(242, 201, 76, 0.1); /* Fundo Dourado Transparente */
+  border-color: var(--color-gold); /* Borda Dourada */
+  box-shadow: 0 5px 20px rgba(242, 201, 76, 0.15); /* Glow Dourado */
+}
+
+/* Estilo do Texto do Label */
+#retirada-local-label .label-text {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #ccc;
+  transition: 0.3s;
+}
+
+#retirada-local-label:has(input:checked) .label-text {
+  color: var(--color-gold); /* Texto fica dourado */
+}
+
+/* Quadrado do Checkbox Customizado */
+#retirada-local-label .checkmark {
+  border-color: #666;
+  width: 28px;
+  height: 28px;
+}
+
+#retirada-local-label:has(input:checked) .checkmark {
+  background-color: var(--color-gold);
+  border-color: var(--color-gold);
+}
+
+#retirada-local-label:has(input:checked) .checkmark::after {
+  color: #000; /* Check preto no fundo dourado */
+  font-size: 16px;
+}
+
+/* =========================================
+   BOX DA TAXA DE ENTREGA
+   ========================================= */
+
+.delivery-fee-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  background: linear-gradient(135deg, #1a1a1a 0%, #111 100%);
+  border: 1px dashed var(--color-red); /* Borda tracejada estilo "cupom/ticket" */
+  border-radius: 12px;
+  padding: 18px 25px;
+  margin-top: 20px;
+
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Detalhe visual na lateral (barra vermelha) */
+.delivery-fee-container::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
+  width: 5px;
+  background-color: var(--color-red);
+}
+
+/* Texto "Taxa de Entrega" */
+.delivery-fee-label {
+  font-size: 1.1rem;
+  color: #e0e0e0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.delivery-fee-label i {
+  color: var(--color-red);
+  font-size: 1.3rem;
+  background: rgba(217, 48, 37, 0.1);
+  padding: 8px;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Valor (R$) */
+#delivery-fee-display {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--color-gold);
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+  background: rgba(255, 255, 255, 0.05);
+  padding: 5px 15px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* =========================================
+   ESTILO UNIFICADO DOS SELECTS (Endereço e Bairro)
+   ========================================= */
+
+/* Aplica o mesmo estilo visual "Premium" para ambos */
+#adress-select,
+#bairro {
+  width: 100%;
+  padding: 16px 20px; /* Espaço interno generoso */
+  height: 60px; /* Altura fixa robusta */
+
+  /* Cores e Bordas */
+  background-color: #151515;
+  color: #fff;
+  border: 2px solid var(--color-red); /* Borda Vermelha */
+  border-radius: var(--border-radius);
+
+  /* Tipografia */
+  font-family: var(--font-main);
+  font-size: 1.1rem;
+  font-weight: 500;
+  cursor: pointer;
+
+  /* Transições e Sombras */
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(217, 48, 37, 0.15); /* Glow */
+
+  /* Seta Customizada (SVG) */
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23d93025%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E");
+  background-repeat: no-repeat;
+  background-position: right 20px center;
+  background-size: 16px auto;
+}
+
+/* Hover Unificado */
+#adress-select:hover,
+#bairro:hover {
+  background-color: #1a1a1a;
+  box-shadow: 0 8px 25px rgba(217, 48, 37, 0.4);
+}
+
+/* Foco Unificado */
+#adress-select:focus,
+#bairro:focus {
+  outline: none;
+  border-color: var(--color-gold);
+  box-shadow: 0 0 0 3px rgba(242, 201, 76, 0.2);
 }
