@@ -43,6 +43,7 @@ let taxaEntregaAtual = 0;
 let lojaAberta = false;
 let horariosGlobal = [];
 let reviewsCarregadas = [];
+let endereçosCheckoutCache = [];
 
 // 2. Garante que ela também exista no window (para compatibilidade com HTML e códigos antigos)
 
@@ -285,6 +286,7 @@ function checkLoginState() {
     // Logado
     if (btnLogin) btnLogin.style.display = "none";
     if (profileArea) profileArea.style.display = "flex";
+    initCheckoutAddressDropdown();
 
     // Nome vem do LocalStorage "light" ou da memória
     if (nameDisplay && user.name) {
@@ -1521,13 +1523,21 @@ function preencherCheckoutComAtivo(enderecos) {
 
 async function selecionarEnderecoAtivo(id) {
   await setActiveAddress(id);
-  carregarListaEnderecos(); // Recarrega para atualizar visual e checkout
+  carregarListaEnderecos();
+
+  if (window.initCheckoutAddressDropdown) {
+    await window.initCheckoutAddressDropdown();
+  } // Recarrega para atualizar visual e checkout
 }
 
 async function excluirEndereco(id) {
   if (confirm("Remover este endereço?")) {
     await deleteAddress(id);
     carregarListaEnderecos();
+    if (window.initCheckoutAddressDropdown) {
+      await window.initCheckoutAddressDropdown();
+    }
+    showToast("Endereço removido.", "success");
   }
 }
 
@@ -1559,6 +1569,9 @@ if (formNewAddr) {
       formNewAddr.reset();
       formNewAddr.style.display = "none";
       carregarListaEnderecos();
+      if (window.initCheckoutAddressDropdown) {
+        await window.initCheckoutAddressDropdown();
+      }
       showToast("Endereço salvo com sucesso!", "success");
     } else {
       showToast("Erro ao salvar endereço", "error");
@@ -2734,6 +2747,93 @@ function initCookieConsent() {
     });
   }
 }
+
+/**
+ * Inicializa o dropdown de endereços na tela de checkout.
+ * Deve ser chamada após o login ou ao carregar a página se o usuário já estiver logado.
+ */
+async function initCheckoutAddressDropdown() {
+  const select = document.getElementById("adress-select");
+  // Se o elemento não existir na página, para a execução
+  if (!select) return;
+
+  try {
+    // Busca os endereços da API (função já existente no seu código)
+    const endereços = await fetchAddresses();
+    endereçosCheckoutCache = endereços; // Salva em cache para uso no evento change
+
+    // Limpa opções antigas
+    select.innerHTML =
+      '<option value="" disabled selected>Selecione um endereço salvo...</option>';
+
+    if (endereços.length === 0) {
+      select.innerHTML =
+        '<option value="" disabled>Nenhum endereço cadastrado</option>';
+      return;
+    }
+
+    // Popula o select
+    endereços.forEach((addr) => {
+      const label = `${addr.street}, ${addr.number} - ${addr.neighborhood}`;
+      const option = document.createElement("option");
+      option.value = addr.id;
+      option.innerText = label;
+
+      // Se for o endereço ativo, já deixa selecionado (UX)
+      if (addr.is_active) {
+        option.selected = true;
+        // Opcional: Já preencher os campos se vier selecionado
+        preencherCamposCheckout(addr);
+      }
+
+      select.appendChild(option);
+    });
+
+    // Adiciona o listener de mudança
+    select.addEventListener("change", (e) => {
+      const selectedId = e.target.value;
+      // Busca o objeto completo do endereço no cache pelo ID
+      const enderecoSelecionado = endereçosCheckoutCache.find(
+        (a) => a.id == selectedId
+      );
+
+      if (enderecoSelecionado) {
+        preencherCamposCheckout(enderecoSelecionado);
+        showToast("Endereço preenchido!", "success");
+      }
+    });
+  } catch (error) {
+    console.error("Erro ao carregar endereços no checkout:", error);
+  }
+}
+
+/**
+ * Preenche os inputs do formulário com os dados do objeto endereço
+ * e dispara a atualização da taxa de entrega.
+ */
+function preencherCamposCheckout(addr) {
+  const ruaInput = document.getElementById("address");
+  const numInput = document.getElementById("number");
+  const compInput = document.getElementById("comp");
+  const bairroSelect = document.getElementById("bairro");
+
+  if (ruaInput) ruaInput.value = addr.street;
+  if (numInput) numInput.value = addr.number;
+  if (compInput) compInput.value = addr.complement || "";
+
+  // Lógica especial para o Bairro (Select) e Taxa de Entrega
+  if (bairroSelect) {
+    bairroSelect.value = addr.neighborhood;
+
+    // Dispara o evento 'change' manualmente para recalcular a taxa de entrega
+    // Isso ativa a lógica existente no seu initBairrosSelect()
+    const event = new Event("change");
+    bairroSelect.dispatchEvent(event);
+  }
+}
+
+// EXPORTAR PARA O WINDOW (para poder chamar no console ou HTML se necessário)
+window.initCheckoutAddressDropdown = initCheckoutAddressDropdown;
 
 // Garante que todas as funções importantes estão no objeto window
 window.enviarAvaliacao = enviarAvaliacao;

@@ -4353,5 +4353,71 @@ ul.magic-text-body li span {
   }
 }
 
-@media (max-width: 768px) {
+/* =========================================
+   ESTILO DO SELETOR DE ENDEREÇO (CHECKOUT)
+   ========================================= */
+
+/* Container do seletor */
+#address-selection {
+  margin-bottom: 20px;
+  width: 100%;
+}
+
+#address-selection label {
+  color: var(--color-gold);
+  font-weight: 600;
+  margin-bottom: 8px;
+  display: block;
+}
+
+/* O Dropdown em si */
+#adress-select {
+  width: 100%;
+  padding: 16px 20px; /* Mais espaço interno */
+  height: 60px; /* Altura fixa maior para garantir o tamanho */
+
+  /* Cores e Bordas */
+  background-color: #151515;
+  color: #fff;
+  border: 2px solid var(--color-red);
+  border-radius: var(--border-radius);
+
+  /* Fonte e Cursor */
+  font-family: var(--font-main);
+  font-size: 1.1rem; /* Texto levemente maior */
+  font-weight: 500;
+  cursor: pointer;
+
+  /* Transições e Sombras */
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(217, 48, 37, 0.15);
+
+  /* Remove a seta padrão e usa a customizada */
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23d93025%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E");
+  background-repeat: no-repeat;
+  background-position: right 20px center; /* Seta mais para dentro */
+  background-size: 16px auto; /* Seta maior */
+}
+
+/* Ajuste no Hover para manter o tamanho firme */
+#adress-select:hover {
+  background-color: #1a1a1a;
+  box-shadow: 0 8px 25px rgba(217, 48, 37, 0.4); /* Sombra mais forte no hover */
+}
+
+/* Efeito Foco */
+#adress-select:focus {
+  outline: none;
+  border-color: var(--color-gold); /* Muda para dourado ao focar */
+  box-shadow: 0 0 0 3px rgba(242, 201, 76, 0.2);
+}
+
+/* Opções dentro do select */
+#adress-select option {
+  background-color: #1a1a1a;
+  color: #fff;
+  padding: 10px;
 }
