@@ -4750,3 +4750,39 @@ ul.magic-text-body li span {
   font-weight: 700;
   letter-spacing: 0.5px;
 }
+/* =========================================
+   BOTÃO "NOVO ENDEREÇO" (Checkout)
+   ========================================= */
+
+.btn-new-address {
+  background-color: transparent;
+  color: var(--color-gold);
+  border: 1px solid var(--color-gold);
+  padding: 8px 16px;
+  border-radius: 20px; /* Borda arredondada (Pílula) */
+  cursor: pointer;
+  margin-left: auto;
+  font-family: var(--font-main);
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+
+  display: inline-flex;
+  align-items: center;
+  gap: 8px; /* Espaço entre ícone e texto */
+  transition: all 0.3s ease;
+}
+
+/* Efeito Hover (Ao passar o mouse) */
+.btn-new-address:hover {
+  background-color: var(--color-gold);
+  color: #000; /* Texto fica preto para contraste */
+  box-shadow: 0 0 10px rgba(242, 201, 76, 0.4); /* Brilho dourado */
+  transform: translateY(-2px);
+}
+
+/* Efeito de Clique */
+.btn-new-address:active {
+  transform: scale(0.95);
+}

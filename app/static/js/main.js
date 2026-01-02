@@ -224,17 +224,17 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   // Seleciona inputs por ID comum ou tipo 'tel'
   const phoneInputs = document.querySelectorAll(
-    '#whatsapp, input[name="whatsapp"], input[type="tel"]'
+    '#phone, #whatsapp, #acc-whatsapp, input[name="whatsapp"], input[type="tel"]'
   );
 
-  phoneInputs.forEach((input) => {
-    // Garante atributos corretos para mobile
+  const selector = '#phone, #whatsapp, #acc-whatsapp, input[type="tel"]';
+  document.querySelectorAll(selector).forEach((input) => {
+    // Configura atributos de UX mobile
     input.setAttribute("maxlength", "15");
-    input.setAttribute("inputmode", "numeric"); // Abre teclado numérico no celular
+    input.setAttribute("inputmode", "numeric");
 
-    input.addEventListener("input", (e) => {
-      mascaraTelefone(e.target);
-    });
+    // Formata valor inicial (se o navegador tiver preenchido automático)
+    window.mascaraTelefone(input);
   });
 });
 
@@ -1355,7 +1355,16 @@ function openAccountModal() {
   // Preenche o formulário com o que temos salvo
   document.getElementById("acc-name").value = user.name || "";
   document.getElementById("acc-email").value = user.email || "";
-  document.getElementById("acc-whatsapp").value = user.whatsapp || "";
+  const whatsappInput = document.getElementById("acc-whatsapp");
+
+  // 2. Definimos o valor (número puro do banco)
+  whatsappInput.value = user.whatsapp || "";
+
+  // 3. Aplicamos a máscara imediatamente para formatar visualmente
+  if (window.mascaraTelefone) {
+    window.mascaraTelefone(whatsappInput);
+  }
+  // ---------------------
   document.getElementById("acc-password").value = ""; // Senha sempre vazia por segurança
 
   document.getElementById("modal-account").style.display = "flex";
@@ -1409,6 +1418,10 @@ async function saveAccountDetails() {
 
     // Atualiza a tela imediatamente
     checkLoginState();
+    const inputFormulario = document.getElementById("phone");
+    if (inputFormulario) {
+      window.mascaraTelefone(inputFormulario);
+    }
 
     showToast("Dados atualizados com sucesso!", "success");
 
@@ -1425,6 +1438,7 @@ async function saveAccountDetails() {
   btn.innerText = originalTxt;
   btn.disabled = false;
 }
+
 function toggleMobileMenu() {
   const navLinks = document.querySelector(".nav-links");
   if (navLinks) {
@@ -2767,6 +2781,7 @@ function initCookieConsent() {
  * Inicializa o dropdown de endereços na tela de checkout.
  * Deve ser chamada após o login ou ao carregar a página se o usuário já estiver logado.
  */
+
 async function initCheckoutAddressDropdown() {
   const select = document.getElementById("adress-select");
   // Se o elemento não existir na página, para a execução
@@ -2775,6 +2790,16 @@ async function initCheckoutAddressDropdown() {
   try {
     // Busca os endereços da API (função já existente no seu código)
     const endereços = await fetchAddresses();
+
+    if (!Array.isArray(endereços)) {
+      console.warn("⚠️ Esperava lista de endereços, recebeu:", endereços);
+      // Se for erro de limite (429), avisa o usuário
+      if (endereços && endereços.status === 429) {
+        showToast("Muitas tentativas. Aguarde um instante.", "error");
+      }
+      select.innerHTML = '<option value="" disabled>Erro ao carregar</option>';
+      return;
+    }
     endereçosCheckoutCache = endereços; // Salva em cache para uso no evento change
 
     // Limpa opções antigas
@@ -2864,26 +2889,36 @@ window.prepararEAbrirModal = prepararEAbrirModal;
 /**
  * Aplica a máscara (DD) 00000-0000 no input enquanto o usuário digita
  */
-function mascaraTelefone(input) {
-  let value = input.value.replace(/\D/g, ""); // Remove tudo que não é número
+window.mascaraTelefone = function (input) {
+  if (!input) return;
 
-  // Limita a 11 números (DDD + 9 + 8 dígitos)
+  // Garante a limpeza de atributos conflitantes
+  if (input.hasAttribute("dir")) input.removeAttribute("dir");
+
+  let value = input.value.replace(/\D/g, ""); // Remove letras
+
+  // Limita tamanho
   if (value.length > 11) value = value.slice(0, 11);
 
-  // Aplica a formatação
+  // Formata
   if (value.length > 10) {
-    // Formato (DD) 9XXXX-XXXX
     value = value.replace(/^(\d{2})(\d{5})(\d{4}).*/, "($1) $2-$3");
-  } else if (value.length > 5) {
-    // Formato (DD) 9XXXX... (enquanto digita)
+  } else if (value.length > 6) {
     value = value.replace(/^(\d{2})(\d{4})(\d{0,4}).*/, "($1) $2-$3");
   } else if (value.length > 2) {
-    // Formato (DD) ...
     value = value.replace(/^(\d{2})(\d{0,5})/, "($1) $2");
-  } else {
-    // Apenas números iniciais
-    value = value.replace(/^(\d*)/, "$1");
   }
 
   input.value = value;
-}
+};
+
+document.addEventListener("input", (e) => {
+  // Se quem disparou o evento for um campo de telefone...
+  if (
+    e.target.matches(
+      '#phone, #whatsapp, #acc-whatsapp, input[type="tel"], input[name="whatsapp"]'
+    )
+  ) {
+    window.mascaraTelefone(e.target);
+  }
+});

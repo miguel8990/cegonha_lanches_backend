@@ -218,8 +218,29 @@
               <br />
 
               <div class="address-section">
-                <h2 class="form-section-title">Dados de Entrega</h2>
+                <h2
+                  class="form-section-title"
+                  style="margin-bottom: 0; border-bottom: none; width: auto"
+                >
+                  Dados de Entrega
+                </h2>
+                <div style="display: flex; height: 40px">
+                  <button
+                    type="button"
+                    class="btn-new-address"
+                    onclick="openAddressesModal()"
+                  >
+                    <i class="fa-solid fa-plus"></i> Novo endereço
+                  </button>
+                </div>
                 <br />
+                <hr
+                  style="
+                    border: 0;
+                    border-bottom: 1px solid #333;
+                    margin-bottom: 20px;
+                  "
+                />
                 <div class="form-group" id="address-selection">
                   <label for="address-select">Selecione seu endereço:</label>
                   <select id="adress-select" name="adress-select" required>
@@ -1216,7 +1237,7 @@
           </ul>
           <p style="font-size: 0.85rem; color: #888">
             Basta clicar no botão "Entrar Agora" que está no e-mail e você será
-            logado automaticamente aqui.
+            logado automaticamente em uma nova janela.
           </p>
         </div>
 

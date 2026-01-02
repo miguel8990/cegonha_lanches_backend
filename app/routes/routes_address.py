@@ -7,7 +7,7 @@ bp_address = Blueprint('address', __name__)
 
 @bp_address.route('', methods=['GET'])
 @jwt_required()
-@limiter.limit('40 per hour')
+@limiter.limit('60 per minute')
 def list_addresses():
     user_id = get_jwt_identity()
     return jsonify(address_service.get_user_addresses(user_id))
