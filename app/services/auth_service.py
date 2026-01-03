@@ -5,7 +5,11 @@ import os
 import bleach
 import secrets
 from app.models import User, Order, ChatMessage, Coments, db
-from flask_jwt_extended import create_access_token, decode_token
+from flask_jwt_extended import (
+    create_access_token,
+    decode_token, 
+    create_refresh_token as lib_create_refresh_token
+    )
 from app.services.email_services import send_verification_email, send_magic_link_email
 
 
@@ -43,7 +47,14 @@ def create_token(user_id):
     Centraliza a criação de tokens para ser usada no login e na confirmação de email.
     """
     return create_access_token(identity=str(user_id))
-
+    
+def create_refresh_token(user_id):
+    """
+    Gera um token de acesso padrão para o usuário.
+    Centraliza a criação de tokens para ser usada no login e na confirmação de email.
+    """
+    print("token criado")
+    return lib_create_refresh_token(identity=str(user_id))
 
 def register_user(dados):
     """
@@ -364,12 +375,14 @@ def confirmar_email(token):
         # Gera token de login real para o usuário já entrar logado
         # (Nota: login_token é o token de sessão que vai pro cookie)
         login_token = create_token(user.id)
+        refresh_token = create_refresh_token(user.id)
 
         resposta = {
             "name": name,
             "role": role,
             "id": user_id,
             "token": login_token,
+            "refresh_token": refresh_token,
             "whatsapp": user.whatsapp or "",
             "sucesso": True
         }

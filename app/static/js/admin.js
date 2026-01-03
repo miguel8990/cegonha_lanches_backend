@@ -198,6 +198,7 @@ function renderizarFila(elementId, lista, tipo) {
         .replace(".", ",");
       const classeAlerta = tipo === "espera" ? "card-alert" : "";
 
+      // [MELHORIA 1]: Lógica de Botões (Mantida)
       let btnAcao = "";
       if (tipo === "espera") {
         btnAcao = `<button class="btn-primary full-width" onclick="window.moverParaPreparo(${p.id})">ACEITAR <i class="fa-solid fa-arrow-right"></i></button>`;
@@ -207,6 +208,7 @@ function renderizarFila(elementId, lista, tipo) {
         btnAcao = `<button class="btn-primary full-width" style="background:#2ecc71; border-color:#2ecc71;" onclick="window.concluirPedidoDefinitivo(${p.id})">ENTREGUE ✅</button>`;
       }
 
+      // [MELHORIA 2]: Itens do Pedido (Mantido)
       const itensHtml = p.items
         .map((i) => {
           let detalhesHtml = "";
@@ -243,18 +245,43 @@ function renderizarFila(elementId, lista, tipo) {
           }`
         : `🏃 Retirada no Local`;
 
-      const pagamentoHtml =
+      // [MELHORIA 3]: Exibir Troco se for dinheiro
+      let pagamentoHtml =
         p.payment_method === "cash" ? "Dinheiro" : p.payment_method;
+      // Verifica se existe o campo change_for (troco) vindo do backend
+      if (p.payment_method === "cash" && p.change_for) {
+        const trocoPara = parseFloat(p.change_for).toFixed(2).replace(".", ",");
+        const trocoDevolver = (
+          parseFloat(p.change_for) - parseFloat(p.total_price)
+        )
+          .toFixed(2)
+          .replace(".", ",");
+        pagamentoHtml += ` <span style="color:#f39c12; font-size:0.8rem;">(Troco p/ R$ ${trocoPara} ➝ Levar R$ ${trocoDevolver})</span>`;
+      }
+
+      // [MELHORIA 4]: WhatsApp Link (Opcional, mas muito útil)
+      const zapLink = p.customer_phone
+        ? `<a href="https://wa.me/55${p.customer_phone.replace(
+            /\D/g,
+            ""
+          )}" target="_blank" style="color:#2ecc71; text-decoration:none; margin-left:5px;"><i class="fa-brands fa-whatsapp"></i></a>`
+        : "";
 
       return `
             <div class="kitchen-card ${classeAlerta}" style="display:flex; flex-direction:column; gap:10px;">
                 <div style="display:flex; justify-content:space-between; border-bottom:1px solid #444; padding-bottom:5px;">
                     <span style="font-size:1rem; font-weight:bold;">#${
                       p.id
-                    } - ${p.customer_name.split(" ")[0]}</span>
+                    } - ${p.customer_name} ${zapLink}</span>
                     <span style="color:#aaa; font-size:0.9rem;">${hora}</span>
                 </div>
+                
+                <div style="font-size:0.85rem; color:#ccc; margin-top:-5px;">
+                    📞 ${p.customer_phone || "Sem telefone"}
+                </div>
+
                 <div>${itensHtml}</div> 
+                
                 <div style="background:#222; padding:8px; border-radius:5px; font-size:0.85rem; color:#ccc; margin-top:auto;">
                     <div style="margin-bottom:5px;">${enderecoHtml}</div>
                     <div style="display:flex; justify-content:space-between; align-items:center; border-top:1px solid #444; padding-top:5px;">

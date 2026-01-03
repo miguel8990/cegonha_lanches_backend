@@ -5,6 +5,7 @@ from config import Config
 from .extensions import db, jwt, migrate, ma, socketio, limiter, redis_client
 from werkzeug.middleware.proxy_fix import ProxyFix
 import os
+from datetime import timedelta
 
 
 def create_app():
@@ -25,9 +26,17 @@ def create_app():
 
     # JWT Cookie Configuration
     app.config["JWT_TOKEN_LOCATION"] = ["cookies"]
-    app.config["JWT_ACCESS_COOKIE_NAME"] = "token"  # Garante o nome certo
-    app.config["JWT_ACCESS_COOKIE_PATH"] = "/"
     app.config["JWT_COOKIE_CSRF_PROTECT"] = False
+    app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(minutes=15)
+    app.config['JWT_REFRESH_TOKEN_EXPIRES'] = timedelta(days=7)
+    # Configuração do ACCESS TOKEN (O que você já tinha)
+    app.config["JWT_ACCESS_COOKIE_NAME"] = "token" # Recomendado usar nome padrão ou claro
+    app.config["JWT_ACCESS_COOKIE_PATH"] = "/"
+    
+    # --- ADICIONE ESTAS LINHAS PARA O REFRESH TOKEN ---
+    app.config["JWT_REFRESH_COOKIE_NAME"] = "refresh_token_cookie"
+    app.config["JWT_REFRESH_COOKIE_PATH"] = "/api/auth/refresh" # Segurança: O cookie só é enviado nesta rota!
+    # --------------------------------------------------
 
     # 🔥 CORREÇÃO DE COOKIES CROSS-ORIGIN
     # 🔥 CONFIGURAÇÃO PERFEITA (Funciona Local e Produção igual)

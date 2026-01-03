@@ -10,6 +10,20 @@ const isLocalhost =
 // 🔥 MUDANÇA: Use '/api' na produção (relativo)
 export const API_BASE_URL = "/api";
 
+let isRefreshing = false;
+let failedQueue = [];
+
+const processQueue = (error, token = null) => {
+  failedQueue.forEach((prom) => {
+    if (error) {
+      prom.reject(error);
+    } else {
+      prom.resolve(token);
+    }
+  });
+  failedQueue = [];
+};
+
 /**
  * HELPER CENTRALIZADO DE REQUISIÇÕES
  * * Refatorado para HttpOnly:
@@ -17,10 +31,26 @@ export const API_BASE_URL = "/api";
  * 2. Garante credentials: "include" para enviar o cookie.
  * 3. Permite sobrescrever headers se necessário (ex: reset de senha).
  */
-async function fetchAuth(endpoint, options = {}) {
+async function attemptTokenRefresh() {
+  try {
+    // Tenta bater na rota de refresh (que lê o cookie HttpOnly secure)
+    const response = await fetch(`${API_BASE_URL}/auth/refresh`, {
+      method: "POST",
+      credentials: "include",
+    });
+    return response.ok;
+  } catch (error) {
+    console.error("Erro no refresh:", error);
+    return false;
+  }
+}
+
+/**
+ * CENTRAL DE REQUISIÇÕES (Com Auto-Refresh e Proteção de Loop)
+ */
+export async function fetchAuth(endpoint, options = {}) {
   const url = `${API_BASE_URL}${endpoint}`;
 
-  // Headers padrão
   const defaultHeaders = {
     "Content-Type": "application/json",
   };
@@ -29,13 +59,76 @@ async function fetchAuth(endpoint, options = {}) {
     ...options,
     headers: {
       ...defaultHeaders,
-      ...options.headers, // Permite que quem chama adicione headers extras (ex: Authorization manual)
+      ...options.headers,
     },
-    credentials: "include", // 🔥 OBRIGATÓRIO: Envia o Cookie HttpOnly para o backend
+    credentials: "include", // Envia Cookies
   };
 
-  const response = await fetch(url, config);
-  return response;
+  try {
+    // 1. Tenta a requisição normal
+    let response = await fetch(url, config);
+
+    // 2. Verifica se o token expirou (401) OU se é inválido/ausente (422)
+    // 🔥 CORREÇÃO: Adicionado 422 para capturar tokens malformados ou reinício de servidor
+    if (response.status === 401 || response.status === 422) {
+      // Evita loop se o próprio login ou refresh falhar
+      if (
+        endpoint.includes("/auth/login") ||
+        endpoint.includes("/auth/refresh")
+      ) {
+        return response;
+      }
+
+      if (isRefreshing) {
+        // Se já está renovando, segura a onda e tenta de novo depois
+        return new Promise((resolve, reject) => {
+          failedQueue.push({
+            resolve: async () => {
+              // Tenta a requisição original de novo
+              const retryResponse = await fetch(url, config);
+              resolve(retryResponse);
+            },
+            reject: () => resolve(response), // Se falhar o refresh, devolve o erro original
+          });
+        });
+      }
+
+      isRefreshing = true;
+
+      const refreshed = await attemptTokenRefresh();
+
+      if (refreshed) {
+        // Sucesso no refresh, processa a fila e re-executa a atual
+        processQueue(null, true);
+        isRefreshing = false;
+        return await fetch(url, config); // Retenta a original
+      } else {
+        // Falha no refresh (refresh token expirado ou inválido)
+        processQueue(new Error("Refresh failed"), null);
+        isRefreshing = false;
+
+        // Se for apenas uma checagem de "quem sou eu", não redireciona forçado,
+        // apenas retorna o erro para o front tratar (ex: mostrar botão de login)
+        if (endpoint.includes("/auth/me")) {
+          return response;
+        }
+
+        // Se for ação do usuário (ex: criar pedido), força logout
+        console.warn("Sessão expirada definitivamente.");
+        import("./auth.js").then((auth) => auth.logout());
+        return response;
+      }
+    }
+
+    return response;
+  } catch (error) {
+    console.error("Erro de conexão:", error);
+    return {
+      ok: false,
+      status: 500,
+      json: async () => ({ error: "Sem conexão com o servidor" }),
+    };
+  }
 }
 
 // -----------------------------------------------------------------------------

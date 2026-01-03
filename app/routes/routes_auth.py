@@ -1,6 +1,6 @@
 from flask import Blueprint, jsonify, request, redirect, make_response, render_template
 from app.services import auth_service, config_service
-from flask_jwt_extended import jwt_required, get_jwt_identity, unset_jwt_cookies, set_access_cookies
+from flask_jwt_extended import set_refresh_cookies, jwt_required, get_jwt_identity, unset_jwt_cookies, set_access_cookies
 from app.decorators import super_admin_required, verified_user_required
 from app.extensions import limiter
 from flask_jwt_extended import get_jwt
@@ -49,15 +49,28 @@ def login():
             "code": "email_not_verified" # Código útil para o front tratar diferente se quiser
         }), 403
     access_token = auth_service.create_token(user_data["id"])
+    refresh_token = auth_service.create_refresh_token(user_data["id"])
     
     resp = jsonify({
         "user": user_data,
         "message": "Login realizado com sucesso"
     })
-
+    set_refresh_cookies(resp, refresh_token)
     set_access_cookies(resp, access_token)
     return resp, 200
 
+@bp_auth.route('/refresh', methods=['POST'])
+@jwt_required(refresh=True) # <--- Importante: Exige o Refresh Token válido
+def refresh():
+    current_user_id = get_jwt_identity()
+    
+    # Cria APENAS um novo Access Token
+    new_access_token = auth_service.create_token(current_user_id)
+    
+    resp = jsonify({'refresh': True})
+    set_access_cookies(resp, new_access_token)
+    
+    return resp, 200
 
 # =============================================================================
 # ✉️ CONFIRMAÇÃO DE EMAIL (UNIFICADA)
@@ -89,6 +102,7 @@ def confirm_email():
 
         # 🔥 PONTO CRÍTICO: Aqui o cookie de sessão é gravado!
         set_access_cookies(resp, resultado['token'])
+        set_refresh_cookies(resp, resultado['refresh_token'])
 
         return resp
     else:
@@ -144,33 +158,33 @@ def google_auth():
     credential_token = data.get('credential')
 
     if not credential_token:
-        print("credencial invalida")
         return jsonify({'message': 'Credencial inválida.'}), 400
-
 
     try:
         user = auth_service.login_with_google(credential_token)
 
-        print(f"DEBUG AUTH: Gerando token para User ID: {user.id} (Tipo: {type(user.id)})")
-        session_token = auth_service.create_token(user.id)
-        if user.id is None:
-            print("Falha ao gerar ID do usuário.")
-            raise ValueError("Falha ao gerar ID do usuário.")
+        # 1. GERA OS DOIS TOKENS
+        access_token = auth_service.create_token(user.id)
+        refresh_token = auth_service.create_refresh_token(user.id) # <--- Faltava isso
+
         resp_data = {
             "user": {
                 "id": user.id,
                 "name": user.name,
                 "email": user.email,
                 "role": user.role,
-                "whatsapp": user.whatsapp
+                "whatsapp": user.whatsapp,
+                "is_verified": user.is_verified
             }
         }
 
         response = jsonify(resp_data)
 
-        # 🔥 SETA O COOKIE
-        set_access_cookies(response, session_token)
-        print("cookie setado")
+        # 2. SALVA OS DOIS COOKIES
+        set_access_cookies(response, access_token)
+        set_refresh_cookies(response, refresh_token) # <--- Faltava isso
+        
+        print(f"Login Google: Cookies Access e Refresh setados para User {user.id}")
 
         return response, 200
 
@@ -179,7 +193,6 @@ def google_auth():
     except Exception as e:
         print(f"Erro Google Login: {e}")
         return jsonify({'message': 'Erro interno no login Google'}), 500
-
 
 # =============================================================================
 # 🚪 LOGOUT
